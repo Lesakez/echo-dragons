@@ -1,2 +1,38 @@
+import { Repository } from 'typeorm';
+import { Character } from '../models/character.entity';
+import { Monster } from '../models/monster.entity';
+import { Item } from '../models/item.entity';
+import { Skill } from '../models/skill.entity';
+import { BattleLog } from '../models/battle-log.entity';
+import { BattleState, BattleAction } from './interfaces/battle.interfaces';
 export declare class BattlesService {
+    private characterRepository;
+    private monsterRepository;
+    private itemRepository;
+    private skillRepository;
+    private battleLogRepository;
+    private activeBattles;
+    constructor(characterRepository: Repository<Character>, monsterRepository: Repository<Monster>, itemRepository: Repository<Item>, skillRepository: Repository<Skill>, battleLogRepository: Repository<BattleLog>);
+    createPvEBattle(characterId: number, monsterIds: number[]): Promise<BattleState>;
+    createPvPBattle(characterIds: number[]): Promise<BattleState>;
+    performAction(battleId: number, participantId: number, action: BattleAction): Promise<BattleState>;
+    private getCurrentParticipant;
+    private endParticipantTurn;
+    private startNewTurn;
+    private checkBattleEnd;
+    private handleBattleRewards;
+    private saveBattleLog;
+    private calculateInitiative;
+    private calculateMonsterInitiative;
+    private calculateDamage;
+    private calculateSkillDamage;
+    private calculateHealing;
+    private applyAdditionalEffects;
+    private applyEffectsAtTurnStart;
+    private getZoneName;
+    private handleAttack;
+    private handleSkill;
+    private handleItem;
+    private handleBlock;
+    private handleFlee;
 }

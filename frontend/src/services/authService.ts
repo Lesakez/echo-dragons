@@ -1,6 +1,6 @@
 // src/services/authService.ts
 import axios from 'axios';
-import { API_URL } from '../../config';
+import { API_URL } from '../config';
 
 class AuthService {
   async register(userData: { username: string; email: string; password: string }) {

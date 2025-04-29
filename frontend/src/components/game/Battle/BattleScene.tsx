@@ -4,7 +4,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Stage, Container, Sprite } from '@pixi/react';
 import * as PIXI from 'pixi.js';
 import { Socket } from 'socket.io-client';
-import './BattleScene.scss';
 import { BattleState, BattleParticipantState, BattleAction } from '../../../types/battle';
 import { performAction } from '../../../store/slices/battleSlice';
 import BattleControls from './BattleControls';

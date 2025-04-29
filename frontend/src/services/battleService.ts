@@ -1,7 +1,6 @@
-// src/services/battleService.ts
 import axios from 'axios';
 import { BattleState, BattleAction, BattleType, BattleStatus } from '../types/battle';
-import { API_URL } from '../../config';
+import { API_URL } from '../config';
 import socket from './socketService';
 
 class BattleService {
@@ -12,7 +11,7 @@ class BattleService {
     try {
       const response = await axios.post(`${API_URL}/battles/pve`, {
         characterId,
-        monsterIds
+        monsterIds,
       });
       return response.data;
     } catch (error) {
@@ -29,7 +28,7 @@ class BattleService {
   async startPvPBattle(characterIds: number[]): Promise<BattleState> {
     try {
       const response = await axios.post(`${API_URL}/battles/pvp`, {
-        characterIds
+        characterIds,
       });
       return response.data;
     } catch (error) {
@@ -44,14 +43,14 @@ class BattleService {
    * Выполнить действие в бою
    */
   async performAction(
-    battleId: number, 
-    participantId: number, 
+    battleId: number,
+    participantId: number,
     action: BattleAction
   ): Promise<BattleState> {
     try {
       const response = await axios.post(`${API_URL}/battles/${battleId}/action`, {
         participantId,
-        action
+        action,
       });
       return response.data;
     } catch (error) {
@@ -82,16 +81,25 @@ class BattleService {
    */
   async getBattleHistory(characterId: number): Promise<{
     id: number;
-    type: string;
+    type: BattleType;
     result: string;
     date: Date;
   }[]> {
     try {
       const response = await axios.get(`${API_URL}/characters/${characterId}/battles`);
-      return response.data.map((battle: any) => ({
-        ...battle,
-        date: new Date(battle.date)
-      }));
+      return response.data.map((battle: any) => {
+        // Проверяем, что type соответствует BattleType
+        const validTypes = [BattleType.PVE, BattleType.PVP, BattleType.GUILD];
+        const battleType = validTypes.includes(battle.type)
+          ? battle.type as BattleType
+          : BattleType.PVE; // Значение по умолчанию, если type некорректен
+        return {
+          id: battle.id,
+          type: battleType,
+          result: battle.result,
+          date: new Date(battle.date),
+        };
+      });
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         throw new Error(error.response.data.message || 'Не удалось получить историю боев');
@@ -127,17 +135,11 @@ class BattleService {
    * Подключиться к боевой сессии через WebSocket
    */
   connectToBattle(battleId: number, characterId: number, onUpdate: (battle: BattleState) => void): () => void {
-    // Подключаемся к комнате боя
     socket.emit('battle:join', { battleId, characterId });
-
-    // Слушаем обновления состояния боя
     const handleBattleUpdate = (updatedBattle: BattleState) => {
       onUpdate(updatedBattle);
     };
-
     socket.on('battle:update', handleBattleUpdate);
-
-    // Возвращаем функцию для отключения от боя
     return () => {
       socket.off('battle:update', handleBattleUpdate);
       socket.emit('battle:leave', { battleId, characterId });
@@ -145,10 +147,9 @@ class BattleService {
   }
 
   /**
-   * Начать тестовый бой для отладки (не требует сервера)
+   * Начать тестовый бой для отладки
    */
   startTestBattle(): BattleState {
-    // Создаем тестовые данные для боя
     const testBattle: BattleState = {
       id: Date.now(),
       type: BattleType.PVE,
@@ -171,7 +172,7 @@ class BattleService {
           team: 1,
           effects: [],
           isActive: true,
-          stance: 'balanced'
+          stance: 'balanced',
         },
         {
           id: 2,
@@ -188,82 +189,58 @@ class BattleService {
           team: 2,
           effects: [],
           isActive: true,
-          stance: 'offensive'
-        }
+          stance: 'offensive',
+        },
       ],
       logs: ['Бой начался!'],
       startTime: new Date(),
-      lastActionTime: new Date()
+      lastActionTime: new Date(),
     };
-
     return testBattle;
   }
 
   /**
-   * Симуляция действия в тестовом бою (для отладки)
+   * Симуляция действия в тестовом бою
    */
-  performTestAction(
-    battle: BattleState,
-    participantId: number,
-    action: BattleAction
-  ): BattleState {
-    // Создаем копию боя для обновления
+  performTestAction(battle: BattleState, participantId: number, action: BattleAction): BattleState {
     const updatedBattle = JSON.parse(JSON.stringify(battle)) as BattleState;
-    
-    // Находим участника
-    const participant = updatedBattle.participants.find(p => p.id === participantId);
+    const participant = updatedBattle.participants.find((p) => p.id === participantId);
     if (!participant) {
       throw new Error('Участник не найден');
     }
-
-    // Проверяем, достаточно ли очков действий
     if (participant.actionPoints < action.actionPoints) {
       throw new Error('Недостаточно очков действий');
     }
-
-    // Обрабатываем различные типы действий
     switch (action.type) {
       case 'attack':
         if (!action.targetId || !action.targetZone) {
           throw new Error('Не указана цель или зона атаки');
         }
-
-        const target = updatedBattle.participants.find(p => p.id === action.targetId);
+        const target = updatedBattle.participants.find((p) => p.id === action.targetId);
         if (!target) {
           throw new Error('Цель не найдена');
         }
-
-        // Расчет базового урона (упрощенно)
         const damage = Math.floor(Math.random() * 10) + 5;
         target.health = Math.max(0, target.health - damage);
-
-        // Обновляем логи и очки действий
         updatedBattle.logs.push(
           `${participant.name} атакует ${target.name} в ${this.getZoneName(action.targetZone)} и наносит ${damage} урона.`
         );
         participant.actionPoints -= action.actionPoints;
-
-        // Проверяем, жив ли противник
         if (target.health <= 0) {
           target.isActive = false;
           updatedBattle.logs.push(`${target.name} побежден!`);
         }
         break;
-
       case 'block':
         if (!action.blockZones || action.blockZones.length === 0) {
           throw new Error('Не указаны зоны блока');
         }
-
-        // Устанавливаем блок и обновляем логи
         updatedBattle.logs.push(
-          `${participant.name} готовится блокировать ${action.blockZones.map(zone => this.getZoneName(zone)).join(' и ')}.`
+          `${participant.name} готовится блокировать ${action.blockZones.map((zone) => this.getZoneName(zone)).join(' и ')}.`
         );
         participant.actionPoints -= action.actionPoints;
         break;
-
       case 'flee':
-        // Шанс на побег (упрощенно)
         const fleeChance = Math.random() < 0.7;
         if (fleeChance) {
           participant.isActive = false;
@@ -271,46 +248,31 @@ class BattleService {
         } else {
           updatedBattle.logs.push(`${participant.name} пытается сбежать, но не удаётся!`);
         }
-        participant.actionPoints = 0; // Тратим все очки действий
+        participant.actionPoints = 0;
         break;
-
       case 'endTurn':
-        // Просто завершаем ход, тратя все оставшиеся очки действий
         updatedBattle.logs.push(`${participant.name} завершает свой ход.`);
         participant.actionPoints = 0;
         break;
-
       default:
         throw new Error(`Неизвестный тип действия: ${action.type}`);
     }
-
-    // Проверяем окончание хода и начало нового
-    const allDone = updatedBattle.participants.every(p => !p.isActive || p.actionPoints <= 0);
+    const allDone = updatedBattle.participants.every((p) => !p.isActive || p.actionPoints <= 0);
     if (allDone) {
       this.startNewTestTurn(updatedBattle);
     }
-
-    // Проверяем окончание боя
     this.checkTestBattleEnd(updatedBattle);
-
     return updatedBattle;
   }
 
-  /**
-   * Переход к новому ходу в тестовом бою
-   */
   private startNewTestTurn(battle: BattleState): void {
     battle.turn += 1;
     battle.logs.push(`--- Ход ${battle.turn} ---`);
-
-    // Восстанавливаем очки действий
-    battle.participants.forEach(p => {
+    battle.participants.forEach((p) => {
       if (p.isActive) {
         p.actionPoints = p.maxActionPoints;
       }
     });
-
-    // Сортируем по инициативе
     battle.participants.sort((a, b) => {
       if (a.isActive && !b.isActive) return -1;
       if (!a.isActive && b.isActive) return 1;
@@ -318,13 +280,9 @@ class BattleService {
     });
   }
 
-  /**
-   * Проверка окончания тестового боя
-   */
   private checkTestBattleEnd(battle: BattleState): void {
-    const team1Active = battle.participants.some(p => p.isActive && p.team === 1);
-    const team2Active = battle.participants.some(p => p.isActive && p.team === 2);
-
+    const team1Active = battle.participants.some((p) => p.isActive && p.team === 1);
+    const team2Active = battle.participants.some((p) => p.isActive && p.team === 2);
     if (!team1Active) {
       battle.status = BattleStatus.DEFEAT;
       battle.logs.push('Бой завершается поражением!');
@@ -334,15 +292,16 @@ class BattleService {
     }
   }
 
-  /**
-   * Получить название зоны атаки/блока
-   */
   private getZoneName(zone: 'head' | 'body' | 'waist' | 'legs'): string {
     switch (zone) {
-      case 'head': return 'голову';
-      case 'body': return 'тело';
-      case 'waist': return 'пояс';
-      case 'legs': return 'ноги';
+      case 'head':
+        return 'голову';
+      case 'body':
+        return 'тело';
+      case 'waist':
+        return 'пояс';
+      case 'legs':
+        return 'ноги';
     }
   }
 }

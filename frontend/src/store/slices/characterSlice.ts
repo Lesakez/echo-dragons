@@ -1,7 +1,7 @@
 // src/store/slices/characterSlice.ts
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
-import { API_URL } from '../../../config';
+import { API_URL } from '../../config';
 
 interface Character {
   id: number;

@@ -1,7 +1,6 @@
 // src/components/game/Battle/ParticipantInfo.tsx
 import React from 'react';
 import { BattleParticipantState } from '../../../types/battle';
-import './ParticipantInfo.scss';
 
 interface ParticipantInfoProps {
   participant: BattleParticipantState;

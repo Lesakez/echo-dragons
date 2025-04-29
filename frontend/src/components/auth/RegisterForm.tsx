@@ -1,27 +1,26 @@
-// src/components/auth/RegisterForm.tsx
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import type { AppDispatch, RootState } from '../../store'; // Импортируем типы
 import { register, clearError } from '../../store/slices/authSlice';
 import { Link, useNavigate } from 'react-router-dom';
-import './RegisterForm.scss';
 
 const RegisterForm: React.FC = () => {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
   });
   const [formErrors, setFormErrors] = useState({
     username: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
   });
-  
-  const dispatch = useDispatch();
+
+  const dispatch = useDispatch<AppDispatch>(); // Явно указываем AppDispatch
   const navigate = useNavigate();
-  const { loading, error } = useSelector((state: any) => state.auth);
+  const { loading, error } = useSelector((state: RootState) => state.auth); // Используем RootState
 
   const validateForm = () => {
     let isValid = true;
@@ -29,10 +28,9 @@ const RegisterForm: React.FC = () => {
       username: '',
       email: '',
       password: '',
-      confirmPassword: ''
+      confirmPassword: '',
     };
 
-    // Проверка имени пользователя
     if (!formData.username.trim()) {
       errors.username = 'Имя пользователя обязательно';
       isValid = false;
@@ -47,7 +45,6 @@ const RegisterForm: React.FC = () => {
       isValid = false;
     }
 
-    // Проверка email
     if (!formData.email.trim()) {
       errors.email = 'Email обязателен';
       isValid = false;
@@ -56,7 +53,6 @@ const RegisterForm: React.FC = () => {
       isValid = false;
     }
 
-    // Проверка пароля
     if (!formData.password) {
       errors.password = 'Пароль обязателен';
       isValid = false;
@@ -68,7 +64,6 @@ const RegisterForm: React.FC = () => {
       isValid = false;
     }
 
-    // Проверка подтверждения пароля
     if (formData.password !== formData.confirmPassword) {
       errors.confirmPassword = 'Пароли не совпадают';
       isValid = false;
@@ -80,12 +75,10 @@ const RegisterForm: React.FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    // Сбрасываем ошибку при изменении поля
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (formErrors[name as keyof typeof formErrors]) {
-      setFormErrors(prev => ({ ...prev, [name]: '' }));
+      setFormErrors((prev) => ({ ...prev, [name]: '' }));
     }
-    // Сбрасываем серверную ошибку
     if (error) {
       dispatch(clearError());
     }
@@ -93,13 +86,12 @@ const RegisterForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (validateForm()) {
       const { username, email, password } = formData;
       const result = await dispatch(register({ username, email, password }));
-      
+
       if (register.fulfilled.match(result)) {
-        // Регистрация успешна, перенаправляем на страницу создания персонажа
         navigate('/character/create');
       }
     }
@@ -109,11 +101,9 @@ const RegisterForm: React.FC = () => {
     <div className="register-form-container">
       <div className="register-form-wrapper">
         <h2>Регистрация</h2>
-        
-        {error && (
-          <div className="error-message">{error}</div>
-        )}
-        
+
+        {error && <div className="error-message">{error}</div>}
+
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="username">Имя пользователя</label>
@@ -125,11 +115,9 @@ const RegisterForm: React.FC = () => {
               onChange={handleChange}
               className={formErrors.username ? 'error' : ''}
             />
-            {formErrors.username && (
-              <div className="input-error">{formErrors.username}</div>
-            )}
+            {formErrors.username && <div className="input-error">{formErrors.username}</div>}
           </div>
-          
+
           <div className="form-group">
             <label htmlFor="email">Email</label>
             <input
@@ -140,11 +128,9 @@ const RegisterForm: React.FC = () => {
               onChange={handleChange}
               className={formErrors.email ? 'error' : ''}
             />
-            {formErrors.email && (
-              <div className="input-error">{formErrors.email}</div>
-            )}
+            {formErrors.email && <div className="input-error">{formErrors.email}</div>}
           </div>
-          
+
           <div className="form-group">
             <label htmlFor="password">Пароль</label>
             <input
@@ -155,11 +141,9 @@ const RegisterForm: React.FC = () => {
               onChange={handleChange}
               className={formErrors.password ? 'error' : ''}
             />
-            {formErrors.password && (
-              <div className="input-error">{formErrors.password}</div>
-            )}
+            {formErrors.password && <div className="input-error">{formErrors.password}</div>}
           </div>
-          
+
           <div className="form-group">
             <label htmlFor="confirmPassword">Подтверждение пароля</label>
             <input
@@ -170,20 +154,14 @@ const RegisterForm: React.FC = () => {
               onChange={handleChange}
               className={formErrors.confirmPassword ? 'error' : ''}
             />
-            {formErrors.confirmPassword && (
-              <div className="input-error">{formErrors.confirmPassword}</div>
-            )}
+            {formErrors.confirmPassword && <div className="input-error">{formErrors.confirmPassword}</div>}
           </div>
-          
-          <button 
-            type="submit" 
-            className="register-button" 
-            disabled={loading}
-          >
+
+          <button type="submit" className="register-button" disabled={loading}>
             {loading ? 'Регистрация...' : 'Зарегистрироваться'}
           </button>
         </form>
-        
+
         <div className="login-link">
           Уже есть аккаунт? <Link to="/login">Войти</Link>
         </div>

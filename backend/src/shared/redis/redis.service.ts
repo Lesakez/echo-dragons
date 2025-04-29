@@ -28,7 +28,7 @@ export class RedisService {
     await this.redisClient.hSet(key, field, value);
   }
 
-  async getHash(key: string, field: string): Promise<string | null> {
+  async getHash(key: string, field: string): Promise<string | null | undefined> {
     return this.redisClient.hGet(key, field);
   }
 

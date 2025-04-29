@@ -1,6 +1,6 @@
 // src/services/socketService.ts
 import { io } from 'socket.io-client';
-import { SOCKET_URL } from '../../config';
+import { SOCKET_URL } from '../config';
 import { getToken } from '../utils/auth';
 
 // Создаем экземпляр сокета

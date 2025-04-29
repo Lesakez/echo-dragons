@@ -1,9 +1,6 @@
-
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-
-// Импорт всех entity-моделей
 import { User } from './models/user.entity';
 import { Character } from './models/character.entity';
 import { InventorySlot } from './models/inventory-slot.entity';
@@ -22,10 +19,7 @@ import { Guild } from './models/guild.entity';
 import { GuildMember } from './models/guild-member.entity';
 import { Battlefield } from './models/battlefield.entity';
 import { Battle } from './models/battle.entity';
-// Используем правильное имя: Battle вместо BattleLog
 import { BattleLog } from './models/battle-log.entity';
-
-// Импорт модулей
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { CharactersModule } from './modules/characters/characters.module';
@@ -37,52 +31,56 @@ import { RedisModule } from './shared/redis/redis.modules';
 
 @Module({
   imports: [
-    // Загрузка конфигурации из .env файла
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: '.env',
     }),
-    
-    // Конфигурация TypeORM
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get('DB_HOST', 'localhost'),
-        port: configService.get<number>('DB_PORT', 5432),
-        username: configService.get('DB_USERNAME', 'postgres'),
-        password: configService.get('DB_PASSWORD', 'postgres'),
-        database: configService.get('DB_DATABASE', 'echo_dragons'),
-        entities: [
-          // Регистрация всех entity-моделей
-          User,
-          Character,
-          InventorySlot,
-          Item,
-          ItemModification,
-          Skill,
-          CharacterSkill,
-          Quest,
-          CharacterQuest,
-          Npc,
-          Monster,
-          MonsterSpawn,
-          Faction,
-          CharacterReputation,
-          Guild,
-          GuildMember,
-          Battlefield,
-          Battle,
-          BattleLog,
-        ],
-        // Синхронизация схемы базы данных с entity (только для разработки)
-        synchronize: configService.get<boolean>('DB_SYNC', false),
-        // Логгирование SQL запросов (только для отладки)
-        logging: configService.get<boolean>('DB_LOGGING', false),
-      }),
+      useFactory: (configService: ConfigService): TypeOrmModuleOptions => {
+        const config: TypeOrmModuleOptions = {
+          type: 'postgres',
+          host: configService.get<string>('DB_HOST', 'localhost'),
+          port: configService.get<number>('DB_PORT', 5432),
+          username: configService.get<string>('DB_USERNAME', 'postgres'),
+          password: configService.get<string>('DB_PASSWORD'),
+          database: configService.get<string>('DB_DATABASE', 'echo_dragons'),
+          entities: [
+            User,
+            Character,
+            InventorySlot,
+            Item,
+            ItemModification,
+            Skill,
+            CharacterSkill,
+            Quest,
+            CharacterQuest,
+            Npc,
+            Monster,
+            MonsterSpawn,
+            Faction,
+            CharacterReputation,
+            Guild,
+            GuildMember,
+            Battlefield,
+            Battle,
+            BattleLog,
+          ],
+          synchronize: configService.get<boolean>('DB_SYNC', false),
+          logging: configService.get<boolean>('DB_LOGGING', false),
+          retryAttempts: 5,
+          retryDelay: 3000,
+        };
+        console.log('TypeORM Config:', {
+          host: config.host,
+          port: config.port,
+          username: config.username,
+          database: config.database,
+        });
+        return config;
+      },
     }),
-    
-    // Регистрация модулей приложения
     RedisModule,
     AuthModule,
     UsersModule,

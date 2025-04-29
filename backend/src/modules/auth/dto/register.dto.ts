@@ -1,4 +1,3 @@
-// src/modules/auth/dto/register.dto.ts
 import { IsEmail, IsString, MinLength, MaxLength, Matches } from 'class-validator';
 
 export class RegisterDto {
@@ -16,18 +15,5 @@ export class RegisterDto {
   @Matches(/(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])/, {
     message: 'Пароль должен содержать хотя бы одну строчную букву, одну заглавную букву и одну цифру',
   })
-  password: string;
-}
-
-// src/modules/auth/dto/login.dto.ts
-import { IsString, IsNotEmpty } from 'class-validator';
-
-export class LoginDto {
-  @IsString()
-  @IsNotEmpty({ message: 'Пожалуйста, введите email или имя пользователя' })
-  emailOrUsername: string;
-
-  @IsString()
-  @IsNotEmpty({ message: 'Пожалуйста, введите пароль' })
   password: string;
 }

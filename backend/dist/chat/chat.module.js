@@ -8,10 +8,35 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ChatModule = void 0;
 const common_1 = require("@nestjs/common");
+const jwt_1 = require("@nestjs/jwt");
+const config_1 = require("@nestjs/config");
+const typeorm_1 = require("@nestjs/typeorm");
+const chat_gateway_1 = require("./chat.gateway");
+const chat_service_1 = require("./chat.service");
+const message_entity_1 = require("../models/message.entity");
+const redis_modules_1 = require("../shared/redis/redis.modules");
 let ChatModule = class ChatModule {
 };
 exports.ChatModule = ChatModule;
 exports.ChatModule = ChatModule = __decorate([
-    (0, common_1.Module)({})
+    (0, common_1.Module)({
+        imports: [
+            typeorm_1.TypeOrmModule.forFeature([message_entity_1.Message]),
+            config_1.ConfigModule,
+            jwt_1.JwtModule.registerAsync({
+                imports: [config_1.ConfigModule],
+                inject: [config_1.ConfigService],
+                useFactory: async (configService) => ({
+                    secret: configService.get('JWT_ACCESS_SECRET'),
+                    signOptions: {
+                        expiresIn: configService.get('JWT_ACCESS_EXPIRATION', '15m'),
+                    },
+                }),
+            }),
+            redis_modules_1.RedisModule,
+        ],
+        providers: [chat_gateway_1.ChatGateway, chat_service_1.ChatService],
+        exports: [chat_service_1.ChatService],
+    })
 ], ChatModule);
 //# sourceMappingURL=chat.module.js.map

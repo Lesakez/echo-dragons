@@ -4,7 +4,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { login, clearError } from '../../store/slices/authSlice';
 import { Link, useNavigate } from 'react-router-dom';
 import { AppDispatch } from '../../types/redux';
-import './LoginForm.scss';
 
 const LoginForm: React.FC = () => {
   const [formData, setFormData] = useState({

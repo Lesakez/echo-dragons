@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import axios from 'axios';
-import { API_URL } from '../../config';
+import { API_URL } from '../config';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 interface Character {

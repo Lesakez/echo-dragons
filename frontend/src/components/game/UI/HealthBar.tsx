@@ -2,7 +2,6 @@
 import React from 'react';
 import { Container, Graphics } from '@pixi/react';
 import * as PIXI from 'pixi.js';
-import './HealthBar.scss';
 
 interface HealthBarProps {
   current: number;
