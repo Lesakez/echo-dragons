@@ -6,7 +6,7 @@ import { Character } from '../models/character.entity';
 import { Monster } from '../models/monster.entity';
 import { Item } from '../models/item.entity';
 import { Skill } from '../models/skill.entity';
-import { BattleLog } from '../models/battle-log.entity';
+import { Battle } from '../models/battle-log.entity';
 import { BattleParticipant, BattleStatus, BattleType } from '../models/battle.entity';
 
 interface BattleAction {

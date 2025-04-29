@@ -21,12 +21,18 @@ import { CharacterReputation } from './models/character-reputation.entity';
 import { Guild } from './models/guild.entity';
 import { GuildMember } from './models/guild-member.entity';
 import { Battlefield } from './models/battlefield.entity';
+import { Battle } from './models/battle.entity';
+import { BattleLog } from './models/battle-log.entity';
 
 // Импорт модулей
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { CharactersModule } from './modules/characters/characters.module';
-// Другие модули приложения
+import { BattlesModule } from './battles/battles.module';
+import { ChatModule } from './chat/chat.module';
+import { InventoryModule } from './inventory/inventory.module';
+import { QuestsModule } from './quests/quests.module';
+import { RedisModule } from './shared/redis/redis.modules';
 
 @Module({
   imports: [
@@ -65,6 +71,8 @@ import { CharactersModule } from './modules/characters/characters.module';
           Guild,
           GuildMember,
           Battlefield,
+          Battle,
+          BattleLog,
         ],
         // Синхронизация схемы базы данных с entity (только для разработки)
         synchronize: configService.get<boolean>('DB_SYNC', false),
@@ -74,10 +82,14 @@ import { CharactersModule } from './modules/characters/characters.module';
     }),
     
     // Регистрация модулей приложения
+    RedisModule,
     AuthModule,
     UsersModule,
     CharactersModule,
-    // Другие модули
+    BattlesModule,
+    ChatModule,
+    InventoryModule,
+    QuestsModule,
   ],
 })
 export class AppModule {}

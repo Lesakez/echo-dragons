@@ -12,9 +12,17 @@ import { RedisService } from './redis.service';
       useFactory: async (configService: ConfigService) => {
         const client = createClient({
           url: `redis://${configService.get('REDIS_HOST', 'localhost')}:${configService.get('REDIS_PORT', 6379)}`,
+          password: configService.get('REDIS_PASSWORD', ''),
         });
         
-        await client.connect();
+        client.on('error', (err) => {
+          console.error('Redis connection error:', err);
+        });
+        
+        await client.connect().catch(err => {
+          console.error('Failed to connect to Redis:', err);
+        });
+        
         return client;
       },
       inject: [ConfigService],
