@@ -2,9 +2,10 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
+import { Provider } from 'react-redux';
 import { getToken, setupAxiosInterceptors } from './utils/auth';
 import { loadUser } from './store/slices/authSlice';
-import { configureStore } from './store';
+import { configureStore } from './store/index';
 
 // Компоненты аутентификации
 import LoginForm from './components/auth/LoginForm';
@@ -26,7 +27,7 @@ const store = configureStore();
 // Настройка перехватчиков для axios
 setupAxiosInterceptors(store);
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -62,6 +63,14 @@ const App: React.FC = () => {
         <Route path="*" element={<Navigate to="/404" replace />} />
       </Routes>
     </Router>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <Provider store={store}>
+      <AppContent />
+    </Provider>
   );
 };
 

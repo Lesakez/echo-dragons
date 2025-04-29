@@ -1,7 +1,7 @@
 // src/services/battleService.ts
 import axios from 'axios';
 import { BattleState, BattleAction, BattleType, BattleStatus } from '../types/battle';
-import { API_URL } from '../config';
+import { API_URL } from '../../config';
 import socket from './socketService';
 
 class BattleService {

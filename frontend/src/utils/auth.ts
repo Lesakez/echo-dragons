@@ -1,5 +1,6 @@
 // src/utils/auth.ts
 import axios from 'axios';
+import { refreshToken, logout } from '../store/slices/authSlice';
 
 export const setAuthToken = (token: string) => {
   if (token) {
@@ -28,7 +29,7 @@ export const setupAxiosInterceptors = (store: any) => {
       const originalRequest = error.config;
       
       // Если ошибка 401 (Unauthorized) и запрос не повторный
-      if (error.response.status === 401 && !originalRequest._retry) {
+      if (error.response?.status === 401 && !originalRequest._retry) {
         originalRequest._retry = true;
         
         try {

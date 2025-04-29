@@ -1,9 +1,7 @@
-
 // src/components/game/Battle/BattleControls.tsx
 import React, { useState } from 'react';
-import { BattleParticipantState } from '../../../types/battle';
 import { useSelector } from 'react-redux';
-import './BattleControls.scss';
+import { BattleParticipantState } from '../../../types/battle';
 
 interface BattleControlsProps {
   participant: BattleParticipantState;
@@ -34,11 +32,12 @@ const BattleControls: React.FC<BattleControlsProps> = ({
   const [showItems, setShowItems] = useState(false);
   const [stanceSelection, setStanceSelection] = useState<'offensive' | 'defensive' | 'balanced' | null>(null);
   
-  const skills = useSelector((state: any) => state.character.skills);
-  const inventory = useSelector((state: any) => state.character.inventory);
+  const skills = useSelector((state: any) => state.character.skills || []);
+  const inventory = useSelector((state: any) => state.character.inventory || []);
   
+  // Фильтруем предметы, которые можно использовать в бою
   const availableItems = inventory.filter((item: any) => 
-    item.usableInBattle && (
+    item && item.usableInBattle && (
       !selectedTarget || // Самолечение
       item.canTargetEnemy || // Можно использовать на враге
       item.canTargetAlly // Можно использовать на союзнике
@@ -54,10 +53,10 @@ const BattleControls: React.FC<BattleControlsProps> = ({
   };
   
   return (
-    <div className="battle-controls">
-      <div className="main-actions">
+    <div className="bg-background p-4 rounded-lg">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
         <button 
-          className={`action-btn attack ${canAttack ? '' : 'disabled'}`}
+          className={`p-2 rounded font-bold ${canAttack ? 'bg-primary text-background' : 'bg-gray-700 text-gray-500'}`}
           onClick={onAttack}
           disabled={!canAttack}
         >
@@ -65,7 +64,7 @@ const BattleControls: React.FC<BattleControlsProps> = ({
         </button>
         
         <button 
-          className={`action-btn block ${canBlock ? '' : 'disabled'}`}
+          className={`p-2 rounded font-bold ${canBlock ? 'bg-secondary text-white' : 'bg-gray-700 text-gray-500'}`}
           onClick={onBlock}
           disabled={!canBlock}
         >
@@ -73,28 +72,28 @@ const BattleControls: React.FC<BattleControlsProps> = ({
         </button>
         
         <button 
-          className="action-btn skill"
+          className="p-2 rounded font-bold bg-blue-600 text-white"
           onClick={() => setShowSkills(!showSkills)}
         >
           Навыки
         </button>
         
         <button 
-          className="action-btn item"
+          className="p-2 rounded font-bold bg-yellow-600 text-white"
           onClick={() => setShowItems(!showItems)}
         >
           Предметы
         </button>
         
         <button 
-          className="action-btn flee"
+          className="p-2 rounded font-bold bg-red-600 text-white"
           onClick={onFlee}
         >
           Бегство (5 ОД)
         </button>
         
         <button 
-          className="action-btn end-turn"
+          className="p-2 rounded font-bold bg-gray-600 text-white"
           onClick={onEndTurn}
         >
           Завершить ход
@@ -102,16 +101,20 @@ const BattleControls: React.FC<BattleControlsProps> = ({
       </div>
       
       {showSkills && (
-        <div className="skills-panel">
-          <h4>Доступные навыки:</h4>
-          <div className="skills-list">
-            {skills.length === 0 ? (
-              <div className="no-skills">У вас нет доступных навыков</div>
-            ) : (
-              skills.map((skill: any) => (
+        <div className="bg-surface p-4 rounded-lg mb-4">
+          <h4 className="font-bold text-primary mb-2">Доступные навыки:</h4>
+          {skills.length === 0 ? (
+            <div className="text-text-secondary">У вас нет доступных навыков</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {skills.map((skill: any) => (
                 <div 
                   key={skill.id}
-                  className={`skill-item ${skill.manaCost > participant.mana || participant.actionPoints < 3 ? 'disabled' : ''}`}
+                  className={`p-2 border rounded flex items-start cursor-pointer transition-colors ${
+                    skill.manaCost > participant.mana || participant.actionPoints < 3
+                      ? 'border-gray-700 text-gray-500 opacity-50'
+                      : 'border-blue-500 hover:bg-blue-500/10'
+                  }`}
                   onClick={() => {
                     if (skill.manaCost <= participant.mana && participant.actionPoints >= 3) {
                       onUseSkill(skill.id);
@@ -119,18 +122,22 @@ const BattleControls: React.FC<BattleControlsProps> = ({
                     }
                   }}
                 >
-                  <img src={`/assets/sprites/skills/${skill.icon}`} alt={skill.name} />
-                  <div className="skill-info">
-                    <div className="skill-name">{skill.name}</div>
-                    <div className="skill-cost">Мана: {skill.manaCost} | ОД: 3</div>
-                    <div className="skill-desc">{skill.description}</div>
+                  <div className="mr-2">
+                    <div className="w-8 h-8 bg-blue-900 rounded-full flex items-center justify-center text-white">
+                      {skill.icon || '✨'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="font-bold">{skill.name}</div>
+                    <div className="text-xs text-text-secondary">Мана: {skill.manaCost} | ОД: 3</div>
+                    <div className="text-xs text-text-secondary">{skill.description}</div>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
           <button 
-            className="close-btn"
+            className="w-full mt-3 p-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors"
             onClick={() => setShowSkills(false)}
           >
             Закрыть
@@ -139,16 +146,20 @@ const BattleControls: React.FC<BattleControlsProps> = ({
       )}
       
       {showItems && (
-        <div className="items-panel">
-          <h4>Доступные предметы:</h4>
-          <div className="items-list">
-            {availableItems.length === 0 ? (
-              <div className="no-items">У вас нет доступных предметов</div>
-            ) : (
-              availableItems.map((item: any) => (
+        <div className="bg-surface p-4 rounded-lg mb-4">
+          <h4 className="font-bold text-primary mb-2">Доступные предметы:</h4>
+          {availableItems.length === 0 ? (
+            <div className="text-text-secondary">У вас нет доступных предметов</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {availableItems.map((item: any) => (
                 <div 
                   key={item.id}
-                  className={`item-item ${participant.actionPoints < 1 ? 'disabled' : ''}`}
+                  className={`p-2 border rounded flex items-start cursor-pointer transition-colors ${
+                    participant.actionPoints < 1
+                      ? 'border-gray-700 text-gray-500 opacity-50'
+                      : 'border-yellow-500 hover:bg-yellow-500/10'
+                  }`}
                   onClick={() => {
                     if (participant.actionPoints >= 1) {
                       onUseItem(item.id);
@@ -156,18 +167,22 @@ const BattleControls: React.FC<BattleControlsProps> = ({
                     }
                   }}
                 >
-                  <img src={`/assets/sprites/items/${item.icon}`} alt={item.name} />
-                  <div className="item-info">
-                    <div className="item-name">{item.name}</div>
-                    <div className="item-type">{item.type}</div>
-                    <div className="item-desc">{item.description}</div>
+                  <div className="mr-2">
+                    <div className="w-8 h-8 bg-yellow-900 rounded-full flex items-center justify-center text-white">
+                      {item.icon || '🧪'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="font-bold">{item.name}</div>
+                    <div className="text-xs text-text-secondary">{item.type}</div>
+                    <div className="text-xs text-text-secondary">{item.description}</div>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
           <button 
-            className="close-btn"
+            className="w-full mt-3 p-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors"
             onClick={() => setShowItems(false)}
           >
             Закрыть
@@ -175,39 +190,49 @@ const BattleControls: React.FC<BattleControlsProps> = ({
         </div>
       )}
       
-      <div className="stance-selector">
-        <h4>Стойка: {participant.stance}</h4>
-        <div className="stance-options">
+      <div className="bg-surface p-4 rounded-lg">
+        <h4 className="font-bold text-primary mb-2">Стойка: {participant.stance === 'offensive' ? 'Атакующая' : participant.stance === 'defensive' ? 'Защитная' : 'Универсальная'}</h4>
+        <div className="grid grid-cols-3 gap-2">
           <div 
-            className={`stance-option ${stanceSelection === 'offensive' || (participant.stance === 'offensive' && !stanceSelection) ? 'active' : ''}`}
+            className={`p-2 border rounded-md cursor-pointer text-center transition-colors ${
+              stanceSelection === 'offensive' || (participant.stance === 'offensive' && !stanceSelection)
+                ? 'border-primary bg-primary/20 text-primary'
+                : 'border-gray-700 hover:border-primary/50'
+            }`}
             onClick={() => setStanceSelection('offensive')}
           >
-            <img src="/assets/sprites/ui/stance_offensive.png" alt="Атакующая" />
+            <div className="text-xl mb-1">⚔️</div>
             <div>Атакующая</div>
-            <div className="stance-desc">+20% к урону, -10% к защите, +5% к шансу критического удара</div>
           </div>
           
           <div 
-            className={`stance-option ${stanceSelection === 'balanced' || (participant.stance === 'balanced' && !stanceSelection) ? 'active' : ''}`}
+            className={`p-2 border rounded-md cursor-pointer text-center transition-colors ${
+              stanceSelection === 'balanced' || (participant.stance === 'balanced' && !stanceSelection)
+                ? 'border-primary bg-primary/20 text-primary'
+                : 'border-gray-700 hover:border-primary/50'
+            }`}
             onClick={() => setStanceSelection('balanced')}
           >
-            <img src="/assets/sprites/ui/stance_balanced.png" alt="Универсальная" />
+            <div className="text-xl mb-1">⚖️</div>
             <div>Универсальная</div>
-            <div className="stance-desc">+5% ко всем статам, без штрафов</div>
           </div>
           
           <div 
-            className={`stance-option ${stanceSelection === 'defensive' || (participant.stance === 'defensive' && !stanceSelection) ? 'active' : ''}`}
+            className={`p-2 border rounded-md cursor-pointer text-center transition-colors ${
+              stanceSelection === 'defensive' || (participant.stance === 'defensive' && !stanceSelection)
+                ? 'border-primary bg-primary/20 text-primary'
+                : 'border-gray-700 hover:border-primary/50'
+            }`}
             onClick={() => setStanceSelection('defensive')}
           >
-            <img src="/assets/sprites/ui/stance_defensive.png" alt="Защитная" />
+            <div className="text-xl mb-1">🛡️</div>
             <div>Защитная</div>
-            <div className="stance-desc">-10% к урону, +25% к защите, +10% к шансу блока</div>
           </div>
         </div>
+        
         {stanceSelection && stanceSelection !== participant.stance && (
           <button 
-            className="stance-apply"
+            className="w-full mt-3 p-2 bg-primary text-background rounded font-bold hover:bg-primary/90 transition-colors"
             onClick={handleStanceChange}
           >
             Изменить стойку (1 ОД)

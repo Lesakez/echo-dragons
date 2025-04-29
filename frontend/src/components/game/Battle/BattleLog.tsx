@@ -1,6 +1,5 @@
 // src/components/game/Battle/BattleLog.tsx
 import React, { useRef, useEffect } from 'react';
-import './BattleLog.scss';
 
 interface BattleLogProps {
   logs: string[];
@@ -17,13 +16,19 @@ const BattleLog: React.FC<BattleLogProps> = ({ logs }) => {
   }, [logs]);
   
   return (
-    <div className="battle-log">
-      <h3>Журнал боя</h3>
-      <div className="log-entries">
+    <div className="bg-background p-4 rounded-lg h-full max-h-96 overflow-y-auto">
+      <h3 className="text-lg font-bold text-primary mb-2 sticky top-0 bg-background">Журнал боя</h3>
+      <div className="space-y-2">
         {logs.map((log, index) => (
           <div 
             key={index} 
-            className={`log-entry ${log.includes('побежден') ? 'defeat' : ''} ${log.includes('Ход') ? 'turn-indicator' : ''}`}
+            className={`p-2 rounded text-sm ${
+              log.includes('побежден') 
+                ? 'bg-red-900/30 text-red-400' 
+                : log.includes('Ход') 
+                ? 'bg-blue-900/30 text-blue-400 font-bold' 
+                : 'text-text-primary'
+            }`}
           >
             {log}
           </div>
