@@ -23,7 +23,7 @@ import { GuildMember } from './models/guild-member.entity';
 import { Battlefield } from './models/battlefield.entity';
 import { Battle } from './models/battle.entity';
 // Используем правильное имя: Battle вместо BattleLog
-import { Battle as BattleLog } from './models/battle-log.entity';
+import { BattleLog } from './models/battle-log.entity';
 
 // Импорт модулей
 import { AuthModule } from './modules/auth/auth.module';

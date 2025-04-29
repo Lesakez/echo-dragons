@@ -1,3 +1,4 @@
+// src/battles/battles.module.ts
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BattlesController } from './battles.controller';
