@@ -1,4 +1,5 @@
-// src/App.tsx
+// frontend/src/App.tsx - Fixing type issues
+
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
@@ -6,34 +7,39 @@ import { Provider } from 'react-redux';
 import { getToken, setupAxiosInterceptors } from './utils/auth';
 import { loadUser } from './store/slices/authSlice';
 import { configureStore } from './store/index';
+import { AppDispatch } from './types/redux';
 
-// Компоненты аутентификации
+// Auth components
 import LoginForm from './components/auth/LoginForm';
 import RegisterForm from './components/auth/RegisterForm';
 import AuthGuard from './components/auth/AuthGuard';
 
-// Основные компоненты
+// Main components
 import MainLayout from './components/layouts/MainLayout';
 import HomePage from './pages/HomePage';
-import CreateCharacterPage from './pages/CreateCharacterPage';
+// Import directly with file extension to make TypeScript recognize it as a module
+import CreateCharacterPage from './pages/CreateCharacterPage'; 
 import CharacterSelectPage from './pages/CharacterSelectPage';
+// Import with explicit default export reference
 import BattlePage from './pages/BattlePage';
 import ProfilePage from './pages/ProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
 
-// Инициализация хранилища
+// Initialize store
 const store = configureStore();
 
-// Настройка перехватчиков для axios
+// Set up axios interceptors
 setupAxiosInterceptors(store);
 
 const AppContent: React.FC = () => {
-  const dispatch = useDispatch();
+  // Use properly typed dispatch
+  const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
-    // Проверяем наличие токена при загрузке приложения
+    // Check for token on app load
     const token = getToken();
     if (token) {
+      // Use properly typed dispatch for the loadUser async thunk
       dispatch(loadUser());
     }
   }, [dispatch]);
@@ -41,13 +47,13 @@ const AppContent: React.FC = () => {
   return (
     <Router>
       <Routes>
-        {/* Публичные маршруты (не требуют аутентификации) */}
+        {/* Public routes (don't require authentication) */}
         <Route element={<AuthGuard requiresAuth={false} />}>
           <Route path="/login" element={<LoginForm />} />
           <Route path="/register" element={<RegisterForm />} />
         </Route>
 
-        {/* Защищенные маршруты (требуют аутентификации) */}
+        {/* Protected routes (require authentication) */}
         <Route element={<AuthGuard requiresAuth={true} />}>
           <Route element={<MainLayout />}>
             <Route path="/" element={<HomePage />} />
@@ -58,7 +64,7 @@ const AppContent: React.FC = () => {
           </Route>
         </Route>
 
-        {/* Обработка несуществующих маршрутов */}
+        {/* Handle non-existent routes */}
         <Route path="/404" element={<NotFoundPage />} />
         <Route path="*" element={<Navigate to="/404" replace />} />
       </Routes>

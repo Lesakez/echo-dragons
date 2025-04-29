@@ -1,4 +1,4 @@
-// src/components/ui/LoadingSpinner.tsx
+// frontend/src/components/ui/LoadingSpinner.tsx
 import React from 'react';
 
 const LoadingSpinner: React.FC = () => {

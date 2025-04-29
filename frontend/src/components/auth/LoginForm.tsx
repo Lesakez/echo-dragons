@@ -1,8 +1,9 @@
-// src/components/auth/LoginForm.tsx
+// frontend/src/components/auth/LoginForm.tsx
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { login, clearError } from '../../store/slices/authSlice';
 import { Link, useNavigate } from 'react-router-dom';
+import { AppDispatch } from '../../types/redux';
 import './LoginForm.scss';
 
 const LoginForm: React.FC = () => {
@@ -15,7 +16,7 @@ const LoginForm: React.FC = () => {
     password: ''
   });
   
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { loading, error } = useSelector((state: any) => state.auth);
 
@@ -26,15 +27,15 @@ const LoginForm: React.FC = () => {
       password: ''
     };
 
-    // Проверка email/имени пользователя
+    // Check email/username
     if (!formData.emailOrUsername.trim()) {
-      errors.emailOrUsername = 'Пожалуйста, введите email или имя пользователя';
+      errors.emailOrUsername = 'Please enter an email or username';
       isValid = false;
     }
 
-    // Проверка пароля
+    // Check password
     if (!formData.password) {
-      errors.password = 'Пожалуйста, введите пароль';
+      errors.password = 'Please enter a password';
       isValid = false;
     }
 
@@ -45,11 +46,11 @@ const LoginForm: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    // Сбрасываем ошибку при изменении поля
+    // Clear error when field changes
     if (formErrors[name as keyof typeof formErrors]) {
       setFormErrors(prev => ({ ...prev, [name]: '' }));
     }
-    // Сбрасываем серверную ошибку
+    // Clear server error
     if (error) {
       dispatch(clearError());
     }
@@ -61,8 +62,9 @@ const LoginForm: React.FC = () => {
     if (validateForm()) {
       const result = await dispatch(login(formData));
       
-      if (login.fulfilled.match(result)) {
-        // Вход успешен, перенаправляем на главную страницу
+      // Check if login was successful using the action type
+      if (result.type.endsWith('/fulfilled')) {
+        // Login successful, redirect to home page
         navigate('/');
       }
     }
@@ -71,7 +73,7 @@ const LoginForm: React.FC = () => {
   return (
     <div className="login-form-container">
       <div className="login-form-wrapper">
-        <h2>Вход в игру</h2>
+        <h2>Login to the Game</h2>
         
         {error && (
           <div className="error-message">{error}</div>
@@ -79,7 +81,7 @@ const LoginForm: React.FC = () => {
         
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="emailOrUsername">Email или имя пользователя</label>
+            <label htmlFor="emailOrUsername">Email or Username</label>
             <input
               type="text"
               id="emailOrUsername"
@@ -94,7 +96,7 @@ const LoginForm: React.FC = () => {
           </div>
           
           <div className="form-group">
-            <label htmlFor="password">Пароль</label>
+            <label htmlFor="password">Password</label>
             <input
               type="password"
               id="password"
@@ -113,12 +115,12 @@ const LoginForm: React.FC = () => {
             className="login-button" 
             disabled={loading}
           >
-            {loading ? 'Вход...' : 'Войти'}
+            {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
         
         <div className="register-link">
-          Нет аккаунта? <Link to="/register">Зарегистрироваться</Link>
+          Don't have an account? <Link to="/register">Register</Link>
         </div>
       </div>
     </div>

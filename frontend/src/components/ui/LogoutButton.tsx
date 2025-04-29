@@ -3,16 +3,18 @@ import React from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../../store/slices/authSlice';
+import { AppDispatch } from '../../types/redux';
 
 interface LogoutButtonProps {
   className?: string;
 }
 
 const LogoutButton: React.FC<LogoutButtonProps> = ({ className = '' }) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
   const handleLogout = () => {
+    // Using typed dispatch to match the logout action creator
     dispatch(logout());
     navigate('/login');
   };
