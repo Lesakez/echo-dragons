@@ -1,11 +1,11 @@
-// src/components/game/Battle/BattleScene.tsx
+// frontend/src/components/game/Battle/BattleScene.tsx
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Stage, Container, Sprite } from '@pixi/react';
 import * as PIXI from 'pixi.js';
 import { Socket } from 'socket.io-client';
 import './BattleScene.scss';
-import { BattleState, BattleParticipantState } from '../../../types/battle';
+import { BattleState, BattleParticipantState, BattleAction } from '../../../types/battle';
 import { performAction } from '../../../store/slices/battleSlice';
 import BattleControls from './BattleControls';
 import BattleLog from './BattleLog';
@@ -17,9 +17,10 @@ import ActionPointsIndicator from './ActionPointsIndicator';
 
 interface BattleSceneProps {
   socket: Socket;
+  handleAction: (participantId: number, action: BattleAction) => void;
 }
 
-const BattleScene: React.FC<BattleSceneProps> = ({ socket }) => {
+const BattleScene: React.FC<BattleSceneProps> = ({ socket, handleAction }) => {
   const dispatch = useDispatch();
   const battle = useSelector((state: any) => state.battle.currentBattle);
   const character = useSelector((state: any) => state.character.current);
@@ -28,23 +29,23 @@ const BattleScene: React.FC<BattleSceneProps> = ({ socket }) => {
   const [selectedZone, setSelectedZone] = useState<'head' | 'body' | 'waist' | 'legs' | null>(null);
   const [blockZones, setBlockZones] = useState<('head' | 'body' | 'waist' | 'legs')[]>([]);
   
-  // Находим участника, представляющего игрока
+  // Find participant representing the player
   const playerParticipant = battle?.participants.find((p: BattleParticipantState) => 
-    p.type === 'character' && p.entityId === character.id
+    p.type === 'character' && p.entityId === character?.id
   );
   
-  // Определяем, чей сейчас ход
+  // Determine whose turn it is
   const isPlayerTurn = playerParticipant && 
     battle?.participants.find((p: BattleParticipantState) => p.isActive && p.actionPoints > 0)?.id === playerParticipant.id;
   
   useEffect(() => {
     if (socket) {
-      // Подписываемся на обновления состояния боя
+      // Subscribe to battle state updates
       socket.on('battle:update', (updatedBattle: BattleState) => {
         dispatch({ type: 'battle/updateBattle', payload: updatedBattle });
       });
       
-      // Подписываемся на завершение боя
+      // Subscribe to battle end event
       socket.on('battle:end', (result: { status: string, rewards: any }) => {
         dispatch({ type: 'battle/endBattle', payload: result });
       });
@@ -73,7 +74,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({ socket }) => {
       if (blockZones.includes(zone)) {
         setBlockZones(blockZones.filter(z => z !== zone));
       } else {
-        if (blockZones.length < 2) { // Максимум 2 зоны блока
+        if (blockZones.length < 2) { // Maximum 2 block zones
           setBlockZones([...blockZones, zone]);
         }
       }
@@ -82,20 +83,16 @@ const BattleScene: React.FC<BattleSceneProps> = ({ socket }) => {
   
   const handleAttack = () => {
     if (isPlayerTurn && playerParticipant && selectedTarget && selectedZone) {
-      const action = {
+      const action: BattleAction = {
         type: 'attack',
         targetId: selectedTarget,
         targetZone: selectedZone,
-        actionPoints: 2 // Базовая атака обычно стоит 2 ОД
+        actionPoints: 2 // Basic attack usually costs 2 AP
       };
       
-      dispatch(performAction({
-        battleId: battle.id,
-        participantId: playerParticipant.id,
-        action
-      }));
+      handleAction(playerParticipant.id, action);
       
-      // Сбрасываем выбор после действия
+      // Reset selection after action
       setSelectedTarget(null);
       setSelectedZone(null);
     }
@@ -103,123 +100,109 @@ const BattleScene: React.FC<BattleSceneProps> = ({ socket }) => {
   
   const handleBlock = () => {
     if (isPlayerTurn && playerParticipant && blockZones.length > 0) {
-      const action = {
+      const action: BattleAction = {
         type: 'block',
         blockZones,
-        actionPoints: 1 // Блок обычно стоит 1 ОД
+        actionPoints: 1 // Block usually costs 1 AP
       };
       
-      dispatch(performAction({
-        battleId: battle.id,
-        participantId: playerParticipant.id,
-        action
-      }));
+      handleAction(playerParticipant.id, action);
       
-      // Сбрасываем выбор после действия
+      // Reset selection after action
       setBlockZones([]);
     }
   };
   
   const handleUseSkill = (skillId: number) => {
     if (isPlayerTurn && playerParticipant && selectedTarget) {
-      const action = {
+      const action: BattleAction = {
         type: 'skill',
         skillId,
         targetId: selectedTarget,
-        actionPoints: 3 // Навыки обычно стоят 3 ОД
+        actionPoints: 3 // Skills usually cost 3 AP
       };
       
-      dispatch(performAction({
-        battleId: battle.id,
-        participantId: playerParticipant.id,
-        action
-      }));
+      handleAction(playerParticipant.id, action);
       
-      // Сбрасываем выбор после действия
+      // Reset selection after action
       setSelectedTarget(null);
     }
   };
   
   const handleUseItem = (itemId: number) => {
     if (isPlayerTurn && playerParticipant) {
-      const action = {
+      const action: BattleAction = {
         type: 'item',
         itemId,
-        targetId: selectedTarget, // Может быть null для самолечения
-        actionPoints: 1 // Использование предметов обычно стоит 1 ОД
+        // Convert null to undefined to match the BattleAction type
+        targetId: selectedTarget === null ? undefined : selectedTarget,
+        actionPoints: 1 // Using items usually costs 1 AP
       };
       
-      dispatch(performAction({
-        battleId: battle.id,
-        participantId: playerParticipant.id,
-        action
-      }));
+      handleAction(playerParticipant.id, action);
       
-      // Сбрасываем выбор после действия
+      // Reset selection after action
       setSelectedTarget(null);
     }
   };
   
   const handleFlee = () => {
     if (isPlayerTurn && playerParticipant) {
-      const action = {
+      const action: BattleAction = {
         type: 'flee',
-        actionPoints: 5 // Бегство обычно стоит все ОД
+        actionPoints: 5 // Fleeing usually costs all AP
       };
       
-      dispatch(performAction({
-        battleId: battle.id,
-        participantId: playerParticipant.id,
-        action
-      }));
+      handleAction(playerParticipant.id, action);
     }
   };
   
   const handleEndTurn = () => {
     if (isPlayerTurn && playerParticipant) {
-      // Специальное действие для завершения хода
-      dispatch(performAction({
-        battleId: battle.id,
-        participantId: playerParticipant.id,
-        action: { type: 'endTurn', actionPoints: playerParticipant.actionPoints }
-      }));
+      // Special action to end turn
+      const action: BattleAction = { 
+        type: 'endTurn', 
+        actionPoints: playerParticipant.actionPoints 
+      };
+      
+      handleAction(playerParticipant.id, action);
     }
   };
   
   if (!battle) {
-    return <div className="battle-loading">Загрузка боя...</div>;
+    return <div className="battle-loading">Loading battle...</div>;
   }
   
   return (
     <div className="battle-container">
       <div className="battle-header">
         <div className="battle-title">
-          {battle.type === 'PVE' ? 'Бой с монстрами' : 'PvP бой'}
+          {battle.type === 'pve' ? 'Monster Battle' : 'PvP Battle'}
         </div>
         <div className="battle-status">
-          Ход: {battle.turn} | {isPlayerTurn ? 'Ваш ход' : 'Ход противника'}
+          Turn: {battle.turn} | {isPlayerTurn ? 'Your Turn' : 'Enemy Turn'}
         </div>
       </div>
       
       <div className="battle-field">
-        {/* Зона для отображения боя */}
+        {/* Battle rendering area */}
         <Stage 
           width={800} 
           height={400} 
           options={{ backgroundAlpha: 0 }}
         >
           <Container position={[400, 200]}>
-            {/* Здесь рендерим участников боя и эффекты */}
+            {/* Render battle participants and effects */}
             {battle.participants.map((participant: BattleParticipantState, index: number) => (
               <Container key={participant.id} position={[
                 participant.team === 1 ? -200 + (index * 50) : 100 + (index * 50), 
                 0
               ]}>
-                {/* Спрайт участника боя */}
+                {/* Participant sprite */}
                 <Sprite
                   texture={PIXI.Texture.from(
                     participant.type === 'character' 
-                      ? `/assets/sprites/characters/${participant.class}.png` 
+                      ? `/assets/sprites/characters/${participant.class || 'default'}.png` 
                       : `/assets/sprites/monsters/${participant.name.toLowerCase()}.png`
                   )}
                   anchor={0.5}
@@ -230,7 +213,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({ socket }) => {
                   alpha={participant.isActive ? 1 : 0.5}
                 />
                 
-                {/* Индикаторы здоровья и маны */}
+                {/* Health and mana indicators */}
                 <Container position={[0, -60]}>
                   <HealthBar 
                     current={participant.health} 
@@ -247,14 +230,14 @@ const BattleScene: React.FC<BattleSceneProps> = ({ socket }) => {
                   )}
                 </Container>
                 
-                {/* Индикатор очков действий */}
+                {/* Action points indicator */}
                 <ActionPointsIndicator 
                   current={participant.actionPoints} 
                   max={participant.maxActionPoints}
                   position={[0, 50]}
                 />
                 
-                {/* Индикатор выбранной цели */}
+                {/* Target indicator */}
                 {selectedTarget === participant.id && (
                   <Sprite
                     texture={PIXI.Texture.from('/assets/sprites/ui/target_indicator.png')}
@@ -264,7 +247,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({ socket }) => {
                   />
                 )}
                 
-                {/* Эффекты на участнике */}
+                {/* Participant effects */}
                 <Container position={[0, -30]}>
                   {participant.effects.map((effect, effectIndex) => (
                     <EffectIcon 
@@ -275,7 +258,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({ socket }) => {
                   ))}
                 </Container>
                 
-                {/* Индикатор стойки */}
+                {/* Stance indicator */}
                 <Sprite
                   texture={PIXI.Texture.from(`/assets/sprites/ui/stance_${participant.stance}.png`)}
                   anchor={0.5}
@@ -287,86 +270,86 @@ const BattleScene: React.FC<BattleSceneProps> = ({ socket }) => {
           </Container>
         </Stage>
         
-        {/* Зона цели с выбором зон атаки/блока */}
+        {/* Target zone with attack zone selection */}
         {selectedTarget && (
           <div className="target-zone">
-            <h3>Выберите зону атаки:</h3>
+            <h3>Select attack zone:</h3>
             <div className="zone-selector">
               <div 
                 className={`zone-item ${selectedZone === 'head' ? 'selected' : ''}`}
                 onClick={() => handleZoneSelect('head')}
               >
-                Голова
+                Head
               </div>
               <div 
                 className={`zone-item ${selectedZone === 'body' ? 'selected' : ''}`}
                 onClick={() => handleZoneSelect('body')}
               >
-                Тело
+                Body
               </div>
               <div 
                 className={`zone-item ${selectedZone === 'waist' ? 'selected' : ''}`}
                 onClick={() => handleZoneSelect('waist')}
               >
-                Пояс
+                Waist
               </div>
               <div 
                 className={`zone-item ${selectedZone === 'legs' ? 'selected' : ''}`}
                 onClick={() => handleZoneSelect('legs')}
               >
-                Ноги
+                Legs
               </div>
             </div>
           </div>
         )}
         
-        {/* Зона блока */}
+        {/* Block zone */}
         {!selectedTarget && (
           <div className="block-zone">
-            <h3>Выберите зоны блока (макс. 2):</h3>
+            <h3>Select block zones (max. 2):</h3>
             <div className="zone-selector">
               <div 
                 className={`zone-item ${blockZones.includes('head') ? 'selected' : ''}`}
                 onClick={() => handleBlockZoneToggle('head')}
               >
-                Голова
+                Head
               </div>
               <div 
                 className={`zone-item ${blockZones.includes('body') ? 'selected' : ''}`}
                 onClick={() => handleBlockZoneToggle('body')}
               >
-                Тело
+                Body
               </div>
               <div 
                 className={`zone-item ${blockZones.includes('waist') ? 'selected' : ''}`}
                 onClick={() => handleBlockZoneToggle('waist')}
               >
-                Пояс
+                Waist
               </div>
               <div 
                 className={`zone-item ${blockZones.includes('legs') ? 'selected' : ''}`}
                 onClick={() => handleBlockZoneToggle('legs')}
               >
-                Ноги
+                Legs
               </div>
             </div>
           </div>
         )}
       </div>
       
-      {/* Информация о текущем участнике */}
+      {/* Current participant info */}
       {playerParticipant && (
         <div className="player-info">
           <ParticipantInfo participant={playerParticipant} />
         </div>
       )}
       
-      {/* Лог боя */}
+      {/* Battle log */}
       <div className="battle-log-container">
         <BattleLog logs={battle.logs} />
       </div>
       
-      {/* Элементы управления */}
+      {/* Controls */}
       {isPlayerTurn && playerParticipant && (
         <BattleControls
           participant={playerParticipant}

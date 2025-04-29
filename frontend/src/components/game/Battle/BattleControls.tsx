@@ -1,7 +1,7 @@
-// src/components/game/Battle/BattleControls.tsx
+// frontend/src/components/game/Battle/BattleControls.tsx
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
-import { BattleParticipantState } from '../../../types/battle';
+import { BattleParticipantState, BattleAction } from '../../../types/battle';
 
 interface BattleControlsProps {
   participant: BattleParticipantState;
@@ -35,19 +35,19 @@ const BattleControls: React.FC<BattleControlsProps> = ({
   const skills = useSelector((state: any) => state.character.skills || []);
   const inventory = useSelector((state: any) => state.character.inventory || []);
   
-  // Фильтруем предметы, которые можно использовать в бою
+  // Filter items that can be used in battle
   const availableItems = inventory.filter((item: any) => 
     item && item.usableInBattle && (
-      !selectedTarget || // Самолечение
-      item.canTargetEnemy || // Можно использовать на враге
-      item.canTargetAlly // Можно использовать на союзнике
+      !selectedTarget || // Self-healing
+      item.canTargetEnemy || // Can use on enemy
+      item.canTargetAlly // Can use on ally
     )
   );
   
   const handleStanceChange = () => {
-    // В реальной системе здесь был бы dispatch для изменения стойки
+    // In a real system, here would be a dispatch to change the stance
     if (stanceSelection) {
-      console.log(`Изменение стойки на ${stanceSelection}`);
+      console.log(`Changing stance to ${stanceSelection}`);
       setStanceSelection(null);
     }
   };
@@ -60,7 +60,7 @@ const BattleControls: React.FC<BattleControlsProps> = ({
           onClick={onAttack}
           disabled={!canAttack}
         >
-          Атака (2 ОД)
+          Attack (2 AP)
         </button>
         
         <button 
@@ -68,43 +68,43 @@ const BattleControls: React.FC<BattleControlsProps> = ({
           onClick={onBlock}
           disabled={!canBlock}
         >
-          Блок (1 ОД)
+          Block (1 AP)
         </button>
         
         <button 
           className="p-2 rounded font-bold bg-blue-600 text-white"
           onClick={() => setShowSkills(!showSkills)}
         >
-          Навыки
+          Skills
         </button>
         
         <button 
           className="p-2 rounded font-bold bg-yellow-600 text-white"
           onClick={() => setShowItems(!showItems)}
         >
-          Предметы
+          Items
         </button>
         
         <button 
           className="p-2 rounded font-bold bg-red-600 text-white"
           onClick={onFlee}
         >
-          Бегство (5 ОД)
+          Flee (5 AP)
         </button>
         
         <button 
           className="p-2 rounded font-bold bg-gray-600 text-white"
           onClick={onEndTurn}
         >
-          Завершить ход
+          End Turn
         </button>
       </div>
       
       {showSkills && (
         <div className="bg-surface p-4 rounded-lg mb-4">
-          <h4 className="font-bold text-primary mb-2">Доступные навыки:</h4>
+          <h4 className="font-bold text-primary mb-2">Available Skills:</h4>
           {skills.length === 0 ? (
-            <div className="text-text-secondary">У вас нет доступных навыков</div>
+            <div className="text-text-secondary">You have no available skills</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {skills.map((skill: any) => (
@@ -129,7 +129,7 @@ const BattleControls: React.FC<BattleControlsProps> = ({
                   </div>
                   <div>
                     <div className="font-bold">{skill.name}</div>
-                    <div className="text-xs text-text-secondary">Мана: {skill.manaCost} | ОД: 3</div>
+                    <div className="text-xs text-text-secondary">Mana: {skill.manaCost} | AP: 3</div>
                     <div className="text-xs text-text-secondary">{skill.description}</div>
                   </div>
                 </div>
@@ -140,16 +140,16 @@ const BattleControls: React.FC<BattleControlsProps> = ({
             className="w-full mt-3 p-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors"
             onClick={() => setShowSkills(false)}
           >
-            Закрыть
+            Close
           </button>
         </div>
       )}
       
       {showItems && (
         <div className="bg-surface p-4 rounded-lg mb-4">
-          <h4 className="font-bold text-primary mb-2">Доступные предметы:</h4>
+          <h4 className="font-bold text-primary mb-2">Available Items:</h4>
           {availableItems.length === 0 ? (
-            <div className="text-text-secondary">У вас нет доступных предметов</div>
+            <div className="text-text-secondary">You have no available items</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {availableItems.map((item: any) => (
@@ -185,13 +185,13 @@ const BattleControls: React.FC<BattleControlsProps> = ({
             className="w-full mt-3 p-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors"
             onClick={() => setShowItems(false)}
           >
-            Закрыть
+            Close
           </button>
         </div>
       )}
       
       <div className="bg-surface p-4 rounded-lg">
-        <h4 className="font-bold text-primary mb-2">Стойка: {participant.stance === 'offensive' ? 'Атакующая' : participant.stance === 'defensive' ? 'Защитная' : 'Универсальная'}</h4>
+        <h4 className="font-bold text-primary mb-2">Stance: {participant.stance === 'offensive' ? 'Offensive' : participant.stance === 'defensive' ? 'Defensive' : 'Balanced'}</h4>
         <div className="grid grid-cols-3 gap-2">
           <div 
             className={`p-2 border rounded-md cursor-pointer text-center transition-colors ${
@@ -202,7 +202,7 @@ const BattleControls: React.FC<BattleControlsProps> = ({
             onClick={() => setStanceSelection('offensive')}
           >
             <div className="text-xl mb-1">⚔️</div>
-            <div>Атакующая</div>
+            <div>Offensive</div>
           </div>
           
           <div 
@@ -214,7 +214,7 @@ const BattleControls: React.FC<BattleControlsProps> = ({
             onClick={() => setStanceSelection('balanced')}
           >
             <div className="text-xl mb-1">⚖️</div>
-            <div>Универсальная</div>
+            <div>Balanced</div>
           </div>
           
           <div 
@@ -226,7 +226,7 @@ const BattleControls: React.FC<BattleControlsProps> = ({
             onClick={() => setStanceSelection('defensive')}
           >
             <div className="text-xl mb-1">🛡️</div>
-            <div>Защитная</div>
+            <div>Defensive</div>
           </div>
         </div>
         
@@ -235,7 +235,7 @@ const BattleControls: React.FC<BattleControlsProps> = ({
             className="w-full mt-3 p-2 bg-primary text-background rounded font-bold hover:bg-primary/90 transition-colors"
             onClick={handleStanceChange}
           >
-            Изменить стойку (1 ОД)
+            Change Stance (1 AP)
           </button>
         )}
       </div>

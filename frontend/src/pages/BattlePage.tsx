@@ -1,4 +1,5 @@
-// src/pages/BattlePage.tsx
+// frontend/src/pages/BattlePage.tsx - Complete file with default export
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
@@ -6,12 +7,13 @@ import socket from '../services/socketService';
 import { startPvEBattle, performAction, updateBattle, endBattle } from '../store/slices/battleSlice';
 import BattleScene from '../components/game/Battle/BattleScene';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { BattleState, BattleStatus } from '../types/battle';
+import { BattleState, BattleStatus, BattleAction } from '../types/battle';
+import { AppDispatch } from '../types/redux';
 
 const BattlePage: React.FC = () => {
-  const { battleId } = useParams();
+  const { battleId } = useParams<{battleId?: string}>();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
@@ -20,7 +22,7 @@ const BattlePage: React.FC = () => {
   const { current: character } = useSelector((state: any) => state.character);
   const { currentBattle, loading, error, battleResult } = useSelector((state: any) => state.battle);
   
-  // Подключение к серверу и инициализация боя
+  // Connect to server and initialize battle
   useEffect(() => {
     if (!character) {
       navigate('/character/select');
@@ -30,10 +32,10 @@ const BattlePage: React.FC = () => {
     setIsConnecting(true);
     setConnectionError(null);
     
-    // Подключаемся к сокету
+    // Connect to socket
     socket.connect();
     
-    // Устанавливаем обработчики событий для боя
+    // Set up event handlers for battle
     socket.on('battle:update', (updatedBattle: BattleState) => {
       dispatch(updateBattle(updatedBattle));
     });
@@ -42,31 +44,31 @@ const BattlePage: React.FC = () => {
       dispatch(endBattle(result));
     });
     
-    // Инициализируем или подключаемся к бою
+    // Initialize or join battle
     const initBattle = async () => {
       try {
         if (battleId) {
-          // Подключаемся к существующему бою
+          // Join existing battle
           socket.emit('battle:join', { battleId: parseInt(battleId), characterId: character.id });
         } else {
-          // Инициируем новый PvE бой с реальными монстрами
-          dispatch(startPvEBattle({ 
+          // Start a new PvE battle with default monsters
+          await dispatch(startPvEBattle({ 
             characterId: character.id, 
-            // По умолчанию сражаемся с гоблинами - ID берутся из БД
+            // Default to fighting goblins - IDs from DB
             monsterIds: [1, 2]
           }));
         }
         setIsConnecting(false);
       } catch (err) {
         console.error('Battle initialization error:', err);
-        setConnectionError('Не удалось инициализировать бой. Пожалуйста, попробуйте позже.');
+        setConnectionError('Failed to initialize battle. Please try again later.');
         setIsConnecting(false);
       }
     };
     
     initBattle();
     
-    // Очистка при размонтировании
+    // Cleanup on unmount
     return () => {
       socket.off('battle:update');
       socket.off('battle:end');
@@ -80,10 +82,10 @@ const BattlePage: React.FC = () => {
       
       socket.disconnect();
     };
-  }, [character, battleId, dispatch, navigate]);
+  }, [character, battleId, dispatch, navigate, currentBattle]);
   
-  // Обработка действий пользователя
-  const handleAction = (participantId: number, action: any) => {
+  // Handle player actions
+  const handleAction = (participantId: number, action: BattleAction) => {
     if (!currentBattle) return;
     
     dispatch(performAction({
@@ -93,7 +95,7 @@ const BattlePage: React.FC = () => {
     }));
   };
   
-  // Перенаправление на главную в случае завершения боя
+  // Redirect to home after battle ends
   useEffect(() => {
     if (battleResult) {
       const timer = setTimeout(() => {
@@ -107,12 +109,12 @@ const BattlePage: React.FC = () => {
   if (!character) {
     return (
       <div className="flex flex-col items-center justify-center p-8">
-        <p className="text-xl mb-4">Для участия в боях необходимо выбрать персонажа</p>
+        <p className="text-xl mb-4">You need to select a character to participate in battles</p>
         <button
           onClick={() => navigate('/character/select')}
           className="px-4 py-2 bg-primary text-background font-bold rounded hover:bg-primary/90 transition-colors"
         >
-          Выбрать персонажа
+          Select Character
         </button>
       </div>
     );
@@ -132,7 +134,7 @@ const BattlePage: React.FC = () => {
           onClick={() => navigate('/')}
           className="px-4 py-2 bg-secondary text-white font-bold rounded hover:bg-secondary/80 transition-colors"
         >
-          Вернуться на главную
+          Return to Home
         </button>
       </div>
     );
@@ -141,39 +143,39 @@ const BattlePage: React.FC = () => {
   if (!currentBattle) {
     return (
       <div className="flex flex-col items-center justify-center p-8">
-        <p className="text-xl mb-4">Инициализация боя...</p>
+        <p className="text-xl mb-4">Initializing battle...</p>
         <LoadingSpinner />
       </div>
     );
   }
   
-  // Отображаем результаты боя, если он завершен
+  // Show battle results if battle is over
   if (battleResult) {
     const isVictory = battleResult.status === BattleStatus.VICTORY;
     
     return (
       <div className="flex flex-col items-center justify-center p-8">
         <h2 className={`text-3xl font-display mb-6 ${isVictory ? 'text-green-500' : 'text-accent'}`}>
-          {isVictory ? 'Победа!' : 'Поражение!'}
+          {isVictory ? 'Victory!' : 'Defeat!'}
         </h2>
         
         {battleResult.rewards && (
           <div className="bg-surface rounded-lg p-6 mb-6 max-w-xl w-full">
-            <h3 className="text-xl text-primary mb-4">Награды:</h3>
+            <h3 className="text-xl text-primary mb-4">Rewards:</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-text-secondary">Опыт:</p>
+                <p className="text-text-secondary">Experience:</p>
                 <p className="text-xl">{battleResult.rewards.experience}</p>
               </div>
               <div>
-                <p className="text-text-secondary">Золото:</p>
+                <p className="text-text-secondary">Gold:</p>
                 <p className="text-xl">{battleResult.rewards.gold}</p>
               </div>
             </div>
             
             {battleResult.rewards.items.length > 0 && (
               <div className="mt-4">
-                <p className="text-text-secondary mb-2">Предметы:</p>
+                <p className="text-text-secondary mb-2">Items:</p>
                 <ul className="space-y-1">
                   {battleResult.rewards.items.map((item: any, index: number) => (
                     <li key={index} className="flex items-center">
@@ -187,18 +189,18 @@ const BattlePage: React.FC = () => {
           </div>
         )}
         
-        <p className="text-text-secondary mb-6">Перенаправление на главную через несколько секунд...</p>
+        <p className="text-text-secondary mb-6">Redirecting to home in a few seconds...</p>
         <button
           onClick={() => navigate('/')}
           className="px-4 py-2 bg-primary text-background font-bold rounded hover:bg-primary/90 transition-colors"
         >
-          На главную
+          Go to Home
         </button>
       </div>
     );
   }
   
-  // Отображаем боевой интерфейс
+  // Show battle interface
   return (
     <div className="p-4">
       <BattleScene
@@ -209,4 +211,5 @@ const BattlePage: React.FC = () => {
   );
 };
 
+// Add the default export that was missing
 export default BattlePage;

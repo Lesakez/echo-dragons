@@ -1,4 +1,4 @@
-// src/components/game/Battle/BattleLog.tsx
+// frontend/src/components/game/Battle/BattleLog.tsx
 import React, { useRef, useEffect } from 'react';
 
 interface BattleLogProps {
@@ -8,7 +8,7 @@ interface BattleLogProps {
 const BattleLog: React.FC<BattleLogProps> = ({ logs }) => {
   const logEndRef = useRef<HTMLDivElement>(null);
   
-  // Автоматическая прокрутка к последним сообщениям
+  // Auto-scroll to latest messages
   useEffect(() => {
     if (logEndRef.current) {
       logEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -17,15 +17,15 @@ const BattleLog: React.FC<BattleLogProps> = ({ logs }) => {
   
   return (
     <div className="bg-background p-4 rounded-lg h-full max-h-96 overflow-y-auto">
-      <h3 className="text-lg font-bold text-primary mb-2 sticky top-0 bg-background">Журнал боя</h3>
+      <h3 className="text-lg font-bold text-primary mb-2 sticky top-0 bg-background">Battle Log</h3>
       <div className="space-y-2">
         {logs.map((log, index) => (
           <div 
             key={index} 
             className={`p-2 rounded text-sm ${
-              log.includes('побежден') 
+              log.includes('defeated') 
                 ? 'bg-red-900/30 text-red-400' 
-                : log.includes('Ход') 
+                : log.includes('Turn') 
                 ? 'bg-blue-900/30 text-blue-400 font-bold' 
                 : 'text-text-primary'
             }`}
