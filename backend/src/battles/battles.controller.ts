@@ -1,12 +1,12 @@
 import { Controller, Post, Body, Get, Param, UseGuards, Req } from '@nestjs/common';
-import { BattlesService } from './battles.service';
+import { BattleService } from './battles.service';
 import { JwtAuthGuard } from '../modules/auth/guards/jwt-auth.guard';
 import { Request } from 'express';
 
 @Controller('battles')
 @UseGuards(JwtAuthGuard)
 export class BattlesController {
-  constructor(private readonly battlesService: BattlesService) {}
+  constructor(private readonly battlesService: BattleService) {}
 
   @Post('pve')
   async createPvEBattle(

@@ -71,8 +71,8 @@ export class BattleService {
     private itemRepository: Repository<Item>,
     @InjectRepository(Skill)
     private skillRepository: Repository<Skill>,
-    @InjectRepository(BattleLog)
-    private battleLogRepository: Repository<BattleLog>,
+    @InjectRepository(Battle)
+    private battleLogRepository: Repository<Battle>,
   ) {}
 
   async createPvEBattle(characterId: number, monsterIds: number[]): Promise<BattleState> {
@@ -381,7 +381,7 @@ export class BattleService {
     }
 
     // Получаем данные умения из БД
-    const skill = await this.skillRepository.findOne({ where: { id: action.skillId } });
+    const skill = await this.skillRepository.findOne({ where: { id: action.skillId } }) as unknown as SkillComplete;
     if (!skill) {
       throw new Error('Skill not found');
     }
@@ -392,13 +392,14 @@ export class BattleService {
     }
 
     // Проверяем наличие цели, если умение требует
-    let target = null;
+    let target: BattleParticipantState | null = null;
+    
     if (skill.targetType !== 'self' && !action.targetId) {
       throw new Error('Target ID is required for this skill');
     }
 
     if (action.targetId) {
-      target = battle.participants.find(p => p.id === action.targetId);
+      target = battle.participants.find(p => p.id === action.targetId) || null;
       if (!target) {
         throw new Error('Target not found');
       }
@@ -428,8 +429,8 @@ export class BattleService {
         target.health = Math.max(0, target.health - damage);
         battle.logs.push(`${caster.name} использует ${skill.name} и наносит ${damage} урона ${target.name}!`);
         
-        // Проверяем доп. эффекты умения
-        if (skill.additionalEffects) {
+        // Проверяем дополнительные эффекты умения
+        if (skill.additionalEffects && skill.additionalEffects.length > 0) {
           this.applyAdditionalEffects(battle, caster, target, skill);
         }
         
@@ -449,12 +450,15 @@ export class BattleService {
         
       case 'buff':
         if (!target) target = caster; // Если цель не указана, накладываем на себя
+        if (!skill.statModifiers) {
+          skill.statModifiers = {}; // Создаем пустой объект, если отсутствует
+        }
         const buff: BattleEffect = {
           id: Date.now(), // Уникальный ID для эффекта
           name: skill.name,
           type: 'buff',
           affectedStats: skill.statModifiers,
-          remainingTurns: skill.duration,
+          remainingTurns: skill.duration || 1, // По умолчанию 1 ход, если не указано
           sourceId: caster.id
         };
         target.effects.push(buff);
@@ -463,12 +467,15 @@ export class BattleService {
         
       case 'debuff':
         if (!target) throw new Error('Target required for debuff skill');
+        if (!skill.statModifiers) {
+          skill.statModifiers = {}; // Создаем пустой объект, если отсутствует
+        }
         const debuff: BattleEffect = {
           id: Date.now(),
           name: skill.name,
           type: 'debuff',
           affectedStats: skill.statModifiers,
-          remainingTurns: skill.duration,
+          remainingTurns: skill.duration || 1,
           sourceId: caster.id
         };
         target.effects.push(debuff);

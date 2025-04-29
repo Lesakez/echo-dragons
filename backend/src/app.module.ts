@@ -1,4 +1,4 @@
-// src/app.module.ts
+
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -22,7 +22,8 @@ import { Guild } from './models/guild.entity';
 import { GuildMember } from './models/guild-member.entity';
 import { Battlefield } from './models/battlefield.entity';
 import { Battle } from './models/battle.entity';
-import { BattleLog } from './models/battle-log.entity';
+// Используем правильное имя: Battle вместо BattleLog
+import { Battle as BattleLog } from './models/battle-log.entity';
 
 // Импорт модулей
 import { AuthModule } from './modules/auth/auth.module';

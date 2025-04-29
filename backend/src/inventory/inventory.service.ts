@@ -1,7 +1,7 @@
 // src/inventory/inventory.service.ts
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Character } from '../models/character.entity';
 import { InventorySlot } from '../models/inventory-slot.entity';
 import { Item } from '../models/item.entity';
@@ -457,7 +457,7 @@ export class InventoryService {
     const equippedItems = await this.inventorySlotRepository.find({
       where: { 
         characterId, 
-        slotType: this.EQUIPMENT_SLOTS 
+        slotType: In(this.EQUIPMENT_SLOTS)
       },
       relations: ['item', 'modifications']
     });
