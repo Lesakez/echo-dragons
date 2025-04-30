@@ -36,5 +36,23 @@ export declare class ChatGateway implements OnGatewayInit, OnGatewayConnection, 
         text: string;
     }): Promise<{
         status: string;
+        message: string;
+    } | {
+        status: string;
+        message?: undefined;
     }>;
+    handleBattleJoin(client: Socket, data: {
+        battleId: number;
+        characterId: number;
+    }): {
+        status: string;
+        message: string;
+    };
+    handleBattleLeave(client: Socket, data: {
+        battleId: number;
+        characterId: number;
+    }): {
+        status: string;
+        message: string;
+    };
 }

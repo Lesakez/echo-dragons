@@ -1,13 +1,14 @@
-// frontend/src/App.tsx - Fixing type issues
-
+// frontend/src/App.tsx
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { Provider } from 'react-redux';
-import { getToken, setupAxiosInterceptors } from './utils/auth';
+import { getToken } from './utils/auth';
 import { loadUser } from './store/slices/authSlice';
-import { configureStore } from './store/index';
+import { configureStore } from './store';
 import { AppDispatch } from './types/redux';
+// Импорт модуля перехватчиков
+import './utils/setupInterceptors';
 
 // Auth components
 import LoginForm from './components/auth/LoginForm';
@@ -17,10 +18,8 @@ import AuthGuard from './components/auth/AuthGuard';
 // Main components
 import MainLayout from './components/layouts/MainLayout';
 import HomePage from './pages/HomePage';
-// Import directly with file extension to make TypeScript recognize it as a module
-import CreateCharacterPage from './pages/CreateCharacterPage'; 
+import CreateCharacterPage from './pages/CreateCharacterPage';
 import CharacterSelectPage from './pages/CharacterSelectPage';
-// Import with explicit default export reference
 import BattlePage from './pages/BattlePage';
 import ProfilePage from './pages/ProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -28,43 +27,44 @@ import NotFoundPage from './pages/NotFoundPage';
 // Initialize store
 const store = configureStore();
 
-// Set up axios interceptors
-setupAxiosInterceptors(store);
-
 const AppContent: React.FC = () => {
-  // Use properly typed dispatch
+  // Используем dispatch с правильным типом
   const dispatch = useDispatch<AppDispatch>();
+  
+  // Используем селектор для доступа к данным аутентификации
+  const authState = useSelector((state: any) => state.auth);
+  const { isAuthenticated, loading } = authState;
 
   useEffect(() => {
-    // Check for token on app load
+    // Проверяем наличие токена и не загружены ли уже данные пользователя
     const token = getToken();
-    if (token) {
-      // Use properly typed dispatch for the loadUser async thunk
+    if (token && !isAuthenticated && !loading) {
       dispatch(loadUser());
     }
-  }, [dispatch]);
+  }, [dispatch, isAuthenticated, loading]);
 
   return (
     <Router>
       <Routes>
-        {/* Public routes (don't require authentication) */}
+        {/* Публичные маршруты (не требуют аутентификации) */}
         <Route element={<AuthGuard requiresAuth={false} />}>
           <Route path="/login" element={<LoginForm />} />
           <Route path="/register" element={<RegisterForm />} />
         </Route>
 
-        {/* Protected routes (require authentication) */}
+        {/* Защищенные маршруты (требуют аутентификации) */}
         <Route element={<AuthGuard requiresAuth={true} />}>
           <Route element={<MainLayout />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/character/create" element={<CreateCharacterPage />} />
             <Route path="/character/select" element={<CharacterSelectPage />} />
             <Route path="/battle/:battleId" element={<BattlePage />} />
+            <Route path="/battle" element={<BattlePage />} />
             <Route path="/profile" element={<ProfilePage />} />
           </Route>
         </Route>
 
-        {/* Handle non-existent routes */}
+        {/* Обработка несуществующих маршрутов */}
         <Route path="/404" element={<NotFoundPage />} />
         <Route path="*" element={<Navigate to="/404" replace />} />
       </Routes>

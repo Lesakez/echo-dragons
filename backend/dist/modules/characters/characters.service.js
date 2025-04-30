@@ -22,10 +22,10 @@ let CharactersService = class CharactersService {
     constructor(charactersRepository) {
         this.charactersRepository = charactersRepository;
     }
-    async create(user, createCharacterDto) {
+    async create(userId, createCharacterDto) {
         const character = this.charactersRepository.create({
             ...createCharacterDto,
-            user,
+            userId: userId,
             faction: createCharacterDto.faction,
             class: createCharacterDto.class,
             level: 1,

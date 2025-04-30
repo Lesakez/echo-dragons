@@ -1,32 +1,29 @@
-// frontend/src/utils/redux.ts - Helper functions for Redux store setup
-
+// src/types/redux.ts
 import { Store, AnyAction, ThunkAction, Action } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
+import { configureStore } from '../store';
+import { AuthState } from '../store/slices/authSlice';  
+import { BattleSliceState } from '../store/slices/battleSlice';
+import { CharacterState } from '../store/slices/characterSlice';
 
-// Define RootState and AppDispatch types to be used throughout the app
-export type RootState = ReturnType<typeof import('../store').configureStore>['getState'];
-export type AppDispatch = typeof import('../store').configureStore extends () => infer R 
-  ? R extends Store<any, any> 
-    ? R['dispatch'] 
-    : never 
-  : never;
+// Определяем правильный тип RootState
+export type RootState = {
+  auth: AuthState;
+  battle: BattleSliceState;
+  character: CharacterState;
+};
 
-// Typed hooks for better TypeScript support
+// Определяем AppDispatch на основе типа диспетчера хранилища
+export type AppDispatch = ReturnType<typeof configureStore>['dispatch'];
+
+// Создаем типизированные версии хуков useDispatch и useSelector
 export const useAppDispatch = () => useDispatch<AppDispatch>();
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 
-// Thunk action type for async operations
+// Определяем тип AppThunk для асинхронных операций
 export type AppThunk<ReturnType = void> = ThunkAction<
   ReturnType,
   RootState,
   unknown,
   Action<string>
 >;
-
-// Function to create properly typed thunks
-export const createAppThunk = <ReturnType, ArgType = void>(
-  type: string,
-  thunk: (arg: ArgType) => ThunkAction<Promise<ReturnType>, RootState, unknown, AnyAction>
-) => {
-  return thunk;
-};

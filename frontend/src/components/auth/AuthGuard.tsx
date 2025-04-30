@@ -1,9 +1,10 @@
 // frontend/src/components/auth/AuthGuard.tsx
 import React, { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { loadUser } from '../../store/slices/authSlice';
 import LoadingSpinner from '../ui/LoadingSpinner';
+import { getToken } from '../../utils/auth';
 import { AppDispatch } from '../../types/redux';
 
 interface AuthGuardProps {
@@ -11,44 +12,52 @@ interface AuthGuardProps {
 }
 
 /**
- * AuthGuard - Component to protect routes requiring authentication.
- * If user is not authenticated, redirects to login page.
- * If route doesn't require authentication and user is already logged in,
- * redirects to home page (e.g. from login page).
+ * AuthGuard - Компонент для защиты маршрутов, требующих аутентификации.
+ * Если пользователь не аутентифицирован, перенаправляет на страницу входа.
+ * Если маршрут не требует аутентификации, а пользователь уже вошел в систему,
+ * перенаправляет на домашнюю страницу (например, со страницы входа).
  */
 const AuthGuard: React.FC<AuthGuardProps> = ({ requiresAuth = true }) => {
-  const { isAuthenticated, loading, user } = useSelector((state: any) => state.auth);
+  // Используем селектор для доступа к данным аутентификации
+  const authState = useSelector((state: any) => state.auth);
+  const { isAuthenticated, loading, user } = authState;
+  
   const dispatch = useDispatch<AppDispatch>();
   const location = useLocation();
 
   useEffect(() => {
-    // If we have a token but no user data, load it
-    const token = localStorage.getItem('token');
-    if (token && !user && !loading) {
-      // Using loadUser as an action creator directly with AppDispatch type
+    const token = getToken();
+    
+    // Загружаем данные пользователя только если:
+    // 1. У нас есть токен
+    // 2. У нас еще нет данных пользователя
+    // 3. Мы не загружаем данные в данный момент
+    // 4. Мы находимся на защищенном маршруте или явно запрашиваем проверку аутентификации
+    if (token && !user && !loading && requiresAuth) {
       dispatch(loadUser());
     }
-  }, [dispatch, user, loading]);
+  }, [dispatch, user, loading, requiresAuth]);
 
-  // Show loading indicator while checking authentication
+  // Показываем индикатор загрузки при проверке аутентификации
   if (loading) {
     return <LoadingSpinner />;
   }
 
-  // If route requires auth and user is not authenticated
+  // Если маршрут требует аутентификации, а пользователь не аутентифицирован
   if (requiresAuth && !isAuthenticated) {
-    // Redirect to login with return URL
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    // Перенаправляем на страницу входа с URL возврата
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
-  // If route doesn't require auth and user is already authenticated
-  // (e.g. login/register pages)
+  // Если маршрут не требует аутентификации, а пользователь уже аутентифицирован
+  // (например, страницы входа/регистрации)
   if (!requiresAuth && isAuthenticated) {
-    // Redirect to home page
-    return <Navigate to="/" replace />;
+    // Перенаправляем на домашнюю страницу или на страницу, к которой пользователь пытался получить доступ
+    const from = location.state?.from || '/';
+    return <Navigate to={from} replace />;
   }
 
-  // Otherwise render the protected content
+  // В остальных случаях отображаем защищенный контент
   return <Outlet />;
 };
 

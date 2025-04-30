@@ -3,6 +3,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { API_URL } from '../../config';
 
+// Определяем интерфейс Character
 interface Character {
   id: number;
   name: string;
@@ -18,7 +19,8 @@ interface Character {
   // Другие необходимые поля
 }
 
-interface CharacterState {
+// Определяем и экспортируем тип состояния для Character
+export interface CharacterState {
   characters: Character[];
   current: Character | null;
   skills: any[];
@@ -27,6 +29,7 @@ interface CharacterState {
   error: string | null;
 }
 
+// Начальное состояние
 const initialState: CharacterState = {
   characters: [],
   current: null,
@@ -36,14 +39,15 @@ const initialState: CharacterState = {
   error: null
 };
 
+// Асинхронные thunk-действия
 export const fetchCharacters = createAsyncThunk(
   'character/fetchCharacters',
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_URL}/characters`);
       return response.data;
-    } catch (error) {
-      return rejectWithValue((error as any).response?.data?.message || 'Не удалось загрузить персонажей');
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Не удалось загрузить персонажей');
     }
   }
 );
@@ -54,8 +58,8 @@ export const fetchCharacterById = createAsyncThunk(
     try {
       const response = await axios.get(`${API_URL}/characters/${characterId}`);
       return response.data;
-    } catch (error) {
-      return rejectWithValue((error as any).response?.data?.message || 'Не удалось загрузить персонажа');
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Не удалось загрузить персонажа');
     }
   }
 );
@@ -66,8 +70,8 @@ export const createCharacter = createAsyncThunk(
     try {
       const response = await axios.post(`${API_URL}/characters`, characterData);
       return response.data;
-    } catch (error) {
-      return rejectWithValue((error as any).response?.data?.message || 'Не удалось создать персонажа');
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Не удалось создать персонажа');
     }
   }
 );
@@ -79,8 +83,8 @@ export const fetchCharacterSkills = createAsyncThunk(
       // Предполагаем, что у нас есть API для получения навыков персонажа
       const response = await axios.get(`${API_URL}/characters/${characterId}/skills`);
       return response.data;
-    } catch (error) {
-      return rejectWithValue((error as any).response?.data?.message || 'Не удалось загрузить навыки персонажа');
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Не удалось загрузить навыки персонажа');
     }
   }
 );
@@ -91,12 +95,13 @@ export const fetchCharacterInventory = createAsyncThunk(
     try {
       const response = await axios.get(`${API_URL}/inventory/character/${characterId}`);
       return response.data;
-    } catch (error) {
-      return rejectWithValue((error as any).response?.data?.message || 'Не удалось загрузить инвентарь персонажа');
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Не удалось загрузить инвентарь персонажа');
     }
   }
 );
 
+// Создание слайса
 const characterSlice = createSlice({
   name: 'character',
   initialState,

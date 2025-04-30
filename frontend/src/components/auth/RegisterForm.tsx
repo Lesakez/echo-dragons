@@ -1,8 +1,12 @@
+// src/components/auth/RegisterForm.tsx
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import type { AppDispatch, RootState } from '../../store'; // Импортируем типы
-import { register, clearError } from '../../store/slices/authSlice';
 import { Link, useNavigate } from 'react-router-dom';
+import { register, clearError } from '../../store/slices/authSlice';
+import { AppDispatch } from '../../types/redux';
+import Button from '../ui/Button';
+import FormInput from '../ui/FormInput';
+import Card from '../ui/Card';
 
 const RegisterForm: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -11,16 +15,17 @@ const RegisterForm: React.FC = () => {
     password: '',
     confirmPassword: '',
   });
+  
   const [formErrors, setFormErrors] = useState({
     username: '',
     email: '',
     password: '',
     confirmPassword: '',
   });
-
-  const dispatch = useDispatch<AppDispatch>(); // Явно указываем AppDispatch
+  
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const { loading, error } = useSelector((state: RootState) => state.auth); // Используем RootState
+  const { loading, error } = useSelector((state: any) => state.auth);
 
   const validateForm = () => {
     let isValid = true;
@@ -76,9 +81,11 @@ const RegisterForm: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    
     if (formErrors[name as keyof typeof formErrors]) {
       setFormErrors((prev) => ({ ...prev, [name]: '' }));
     }
+    
     if (error) {
       dispatch(clearError());
     }
@@ -98,74 +105,75 @@ const RegisterForm: React.FC = () => {
   };
 
   return (
-    <div className="register-form-container">
-      <div className="register-form-wrapper">
-        <h2>Регистрация</h2>
-
-        {error && <div className="error-message">{error}</div>}
-
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="username">Имя пользователя</label>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              className={formErrors.username ? 'error' : ''}
-            />
-            {formErrors.username && <div className="input-error">{formErrors.username}</div>}
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-12">
+      <Card className="max-w-md w-full">
+        <h2 className="text-3xl font-display text-primary text-center mb-6">Регистрация</h2>
+        
+        {error && (
+          <div className="p-3 mb-4 rounded-md bg-accent/20 border border-accent text-accent text-center">
+            {error}
           </div>
-
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className={formErrors.email ? 'error' : ''}
-            />
-            {formErrors.email && <div className="input-error">{formErrors.email}</div>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="password">Пароль</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className={formErrors.password ? 'error' : ''}
-            />
-            {formErrors.password && <div className="input-error">{formErrors.password}</div>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="confirmPassword">Подтверждение пароля</label>
-            <input
-              type="password"
-              id="confirmPassword"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              className={formErrors.confirmPassword ? 'error' : ''}
-            />
-            {formErrors.confirmPassword && <div className="input-error">{formErrors.confirmPassword}</div>}
-          </div>
-
-          <button type="submit" className="register-button" disabled={loading}>
+        )}
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <FormInput
+            id="username"
+            name="username"
+            label="Имя пользователя"
+            value={formData.username}
+            onChange={handleChange}
+            error={formErrors.username}
+            required
+          />
+          
+          <FormInput
+            id="email"
+            name="email"
+            type="email"
+            label="Email"
+            value={formData.email}
+            onChange={handleChange}
+            error={formErrors.email}
+            required
+          />
+          
+          <FormInput
+            id="password"
+            name="password"
+            type="password"
+            label="Пароль"
+            value={formData.password}
+            onChange={handleChange}
+            error={formErrors.password}
+            required
+          />
+          
+          <FormInput
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            label="Подтверждение пароля"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            error={formErrors.confirmPassword}
+            required
+          />
+          
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            fullWidth
+            disabled={loading}
+          >
             {loading ? 'Регистрация...' : 'Зарегистрироваться'}
-          </button>
+          </Button>
         </form>
-
-        <div className="login-link">
-          Уже есть аккаунт? <Link to="/login">Войти</Link>
+        
+        <div className="mt-6 text-center text-text-secondary">
+          Уже есть аккаунт? <Link to="/login" className="text-primary hover:text-primary/80">Войти</Link>
         </div>
-      </div>
+      </Card>
     </div>
   );
 };

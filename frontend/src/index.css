@@ -1,12 +1,128 @@
+/* src/index.css */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Roboto:wght@300;400;500;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Дополнительные глобальные стили */
-body {
-  @apply bg-background text-text-primary;
+/* Общие стили */
+@layer base {
+  body {
+    @apply bg-background text-text-primary antialiased;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-bold text-primary;
+  }
+  
+  h1 {
+    @apply text-4xl mb-6;
+  }
+  
+  h2 {
+    @apply text-3xl mb-4;
+  }
+  
+  h3 {
+    @apply text-2xl mb-3;
+  }
+  
+  h4 {
+    @apply text-xl mb-2;
+  }
+  
+  a {
+    @apply text-secondary hover:text-secondary/80 transition-colors;
+  }
+  
+  button {
+    @apply transition-all duration-200;
+  }
 }
 
-h1, h2, h3, h4, h5, h6 {
-  @apply font-display;
+/* Компоненты */
+@layer components {
+  /* Карточки */
+  .card {
+    @apply bg-surface rounded-lg p-6 shadow-card;
+  }
+  
+  /* Кнопки */
+  .btn {
+    @apply px-4 py-2 rounded font-bold transition-colors;
+  }
+  
+  .btn-primary {
+    @apply bg-primary text-background hover:bg-primary/90;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary text-white hover:bg-secondary/90;
+  }
+  
+  .btn-danger {
+    @apply bg-accent text-white hover:bg-accent/90;
+  }
+  
+  .btn-outline {
+    @apply bg-transparent border-2 border-primary text-primary hover:bg-primary/10;
+  }
+  
+  /* Инпуты */
+  .form-input {
+    @apply w-full bg-background text-text-primary p-3 rounded-md border border-gray-700 focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none;
+  }
+  
+  .form-label {
+    @apply block text-text-secondary mb-2;
+  }
+  
+  .form-error {
+    @apply mt-1 text-accent text-sm;
+  }
+  
+  /* Индикаторы статистики */
+  .stat-bar {
+    @apply h-2 rounded-full bg-gray-700 overflow-hidden;
+  }
+  
+  .stat-bar-fill {
+    @apply h-full transition-all duration-300;
+  }
+  
+  .stat-bar-health {
+    @apply bg-gradient-to-r from-red-600 to-red-500;
+  }
+  
+  .stat-bar-mana {
+    @apply bg-gradient-to-r from-blue-600 to-blue-500;
+  }
+  
+  .stat-bar-exp {
+    @apply bg-gradient-to-r from-green-600 to-green-400;
+  }
+}
+
+/* Утилиты */
+@layer utilities {
+  .text-shadow {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  }
+  
+  .text-glow {
+    text-shadow: 0 0 8px rgba(248, 197, 28, 0.6);
+  }
+  
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  
+  .scrollbar-hidden {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+  }
 }

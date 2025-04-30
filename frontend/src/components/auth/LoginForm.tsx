@@ -1,9 +1,12 @@
-// frontend/src/components/auth/LoginForm.tsx
+// src/components/auth/LoginForm.tsx
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { login, clearError } from '../../store/slices/authSlice';
 import { Link, useNavigate } from 'react-router-dom';
+import { login, clearError } from '../../store/slices/authSlice';
 import { AppDispatch } from '../../types/redux';
+import Button from '../ui/Button';
+import FormInput from '../ui/FormInput';
+import Card from '../ui/Card';
 
 const LoginForm: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -26,15 +29,15 @@ const LoginForm: React.FC = () => {
       password: ''
     };
 
-    // Check email/username
+    // Проверка email/username
     if (!formData.emailOrUsername.trim()) {
-      errors.emailOrUsername = 'Please enter an email or username';
+      errors.emailOrUsername = 'Пожалуйста, введите email или имя пользователя';
       isValid = false;
     }
 
-    // Check password
+    // Проверка пароля
     if (!formData.password) {
-      errors.password = 'Please enter a password';
+      errors.password = 'Пожалуйста, введите пароль';
       isValid = false;
     }
 
@@ -45,11 +48,13 @@ const LoginForm: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear error when field changes
+    
+    // Очистка ошибки при изменении поля
     if (formErrors[name as keyof typeof formErrors]) {
       setFormErrors(prev => ({ ...prev, [name]: '' }));
     }
-    // Clear server error
+    
+    // Очистка серверной ошибки
     if (error) {
       dispatch(clearError());
     }
@@ -61,67 +66,61 @@ const LoginForm: React.FC = () => {
     if (validateForm()) {
       const result = await dispatch(login(formData));
       
-      // Check if login was successful using the action type
-      if (result.type.endsWith('/fulfilled')) {
-        // Login successful, redirect to home page
+      if (login.fulfilled.match(result)) {
+        // Вход успешен, перенаправление на главную
         navigate('/');
       }
     }
   };
 
   return (
-    <div className="login-form-container">
-      <div className="login-form-wrapper">
-        <h2>Login to the Game</h2>
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-12">
+      <Card className="max-w-md w-full">
+        <h2 className="text-3xl font-display text-primary text-center mb-6">Вход в игру</h2>
         
         {error && (
-          <div className="error-message">{error}</div>
+          <div className="p-3 mb-4 rounded-md bg-accent/20 border border-accent text-accent text-center">
+            {error}
+          </div>
         )}
         
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="emailOrUsername">Email or Username</label>
-            <input
-              type="text"
-              id="emailOrUsername"
-              name="emailOrUsername"
-              value={formData.emailOrUsername}
-              onChange={handleChange}
-              className={formErrors.emailOrUsername ? 'error' : ''}
-            />
-            {formErrors.emailOrUsername && (
-              <div className="input-error">{formErrors.emailOrUsername}</div>
-            )}
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <FormInput
+            id="emailOrUsername"
+            name="emailOrUsername"
+            label="Email или имя пользователя"
+            value={formData.emailOrUsername}
+            onChange={handleChange}
+            error={formErrors.emailOrUsername}
+            required
+          />
           
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className={formErrors.password ? 'error' : ''}
-            />
-            {formErrors.password && (
-              <div className="input-error">{formErrors.password}</div>
-            )}
-          </div>
+          <FormInput
+            id="password"
+            name="password"
+            type="password"
+            label="Пароль"
+            value={formData.password}
+            onChange={handleChange}
+            error={formErrors.password}
+            required
+          />
           
-          <button 
+          <Button 
             type="submit" 
-            className="login-button" 
+            variant="primary"
+            size="lg"
+            fullWidth
             disabled={loading}
           >
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
+            {loading ? 'Вход...' : 'Войти в игру'}
+          </Button>
         </form>
         
-        <div className="register-link">
-          Don't have an account? <Link to="/register">Register</Link>
+        <div className="mt-6 text-center text-text-secondary">
+          Нет аккаунта? <Link to="/register" className="text-primary hover:text-primary/80">Зарегистрироваться</Link>
         </div>
-      </div>
+      </Card>
     </div>
   );
 };

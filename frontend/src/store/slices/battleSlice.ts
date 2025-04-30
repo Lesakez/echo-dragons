@@ -1,12 +1,14 @@
+// src/store/slices/battleSlice.ts
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { BattleState, BattleParticipantState, BattleAction, BattleResult, BattleType } from '../../types/battle';
+import { BattleState, BattleParticipantState, BattleAction, BattleResult, BattleType, BattleStatus } from '../../types/battle';
 import battleService from '../../services/battleService';
 
-interface BattleSliceState {
+// Определяем и экспортируем тип состояния среза боя
+export interface BattleSliceState {
   currentBattle: BattleState | null;
   battleHistory: {
     id: number;
-    type: BattleType; // Изменяем с string на BattleType для соответствия
+    type: BattleType;
     result: string;
     date: Date;
   }[];
@@ -15,6 +17,7 @@ interface BattleSliceState {
   battleResult: BattleResult | null;
 }
 
+// Начальное состояние
 const initialState: BattleSliceState = {
   currentBattle: null,
   battleHistory: [],
@@ -31,7 +34,7 @@ export const startPvEBattle = createAsyncThunk(
       const battle = await battleService.startPvEBattle(params.characterId, params.monsterIds);
       return battle;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || (error as Error).message);
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
@@ -43,7 +46,7 @@ export const startPvPBattle = createAsyncThunk(
       const battle = await battleService.startPvPBattle(characterIds);
       return battle;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || (error as Error).message);
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
@@ -59,7 +62,7 @@ export const performAction = createAsyncThunk(
       );
       return updatedBattle;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || (error as Error).message);
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
@@ -71,7 +74,7 @@ export const getBattleHistory = createAsyncThunk(
       const history = await battleService.getBattleHistory(characterId);
       return history;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || (error as Error).message);
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
@@ -98,7 +101,7 @@ const battleSlice = createSlice({
       if (currentBattle) {
         state.battleHistory.unshift({
           id: currentBattle.id,
-          type: currentBattle.type, // Теперь type: BattleType
+          type: currentBattle.type,
           result: action.payload.status,
           date: new Date(),
         });

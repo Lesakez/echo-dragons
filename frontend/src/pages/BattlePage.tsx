@@ -1,29 +1,62 @@
-// frontend/src/pages/BattlePage.tsx - Complete file with default export
-
-import React, { useEffect, useState } from 'react';
+// frontend/src/pages/BattlePage.tsx
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import socket from '../services/socketService';
-import { startPvEBattle, performAction, updateBattle, endBattle } from '../store/slices/battleSlice';
+import socketService from '../services/socketService';
+import { startPvEBattle, performAction, updateBattle, endBattle, resetBattleState } from '../store/slices/battleSlice';
 import BattleScene from '../components/game/Battle/BattleScene';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { BattleState, BattleStatus, BattleAction } from '../types/battle';
-import { AppDispatch } from '../types/redux';
+import { useAppDispatch, useAppSelector } from '../types/redux';
 
 const BattlePage: React.FC = () => {
   const { battleId } = useParams<{battleId?: string}>();
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   
-  const { user } = useSelector((state: any) => state.auth);
-  const { current: character } = useSelector((state: any) => state.character);
-  const { currentBattle, loading, error, battleResult } = useSelector((state: any) => state.battle);
+  // Use typed selector hooks
+  const { user } = useAppSelector(state => state.auth);
+  const { current: character } = useAppSelector(state => state.character);
+  const { currentBattle, loading, error, battleResult } = useAppSelector(state => state.battle);
+  
+  // Handle socket events
+  const setupSocketEvents = useCallback(() => {
+    // Battle update event
+    const battleUpdateHandler = (updatedBattle: BattleState) => {
+      dispatch(updateBattle(updatedBattle));
+    };
+    
+    // Battle end event
+    const battleEndHandler = (result: any) => {
+      dispatch(endBattle(result));
+    };
+    
+    // Socket connection error
+    const connectionErrorHandler = (error: any) => {
+      console.error('Socket connection error:', error);
+      setConnectionError('Failed to connect to battle server. Please try again later.');
+    };
+    
+    // Register event handlers
+    socketService.on('battle:update', battleUpdateHandler);
+    socketService.on('battle:end', battleEndHandler);
+    socketService.on('connect_error', connectionErrorHandler);
+    
+    // Return cleanup function
+    return () => {
+      socketService.off('battle:update', battleUpdateHandler);
+      socketService.off('battle:end', battleEndHandler);
+      socketService.off('connect_error', connectionErrorHandler);
+    };
+  }, [dispatch]);
   
   // Connect to server and initialize battle
   useEffect(() => {
+    // Reset battle state when unmounting or when component first loads
+    dispatch(resetBattleState());
+    
     if (!character) {
       navigate('/character/select');
       return;
@@ -32,24 +65,23 @@ const BattlePage: React.FC = () => {
     setIsConnecting(true);
     setConnectionError(null);
     
-    // Connect to socket
-    socket.connect();
+    // Connect to socket if not already connected
+    if (!socketService.getSocket().connected) {
+      socketService.connect();
+    }
     
-    // Set up event handlers for battle
-    socket.on('battle:update', (updatedBattle: BattleState) => {
-      dispatch(updateBattle(updatedBattle));
-    });
-    
-    socket.on('battle:end', (result: any) => {
-      dispatch(endBattle(result));
-    });
+    // Set up socket event handlers
+    const cleanupSocketEvents = setupSocketEvents();
     
     // Initialize or join battle
     const initBattle = async () => {
       try {
         if (battleId) {
           // Join existing battle
-          socket.emit('battle:join', { battleId: parseInt(battleId), characterId: character.id });
+          socketService.emit('battle:join', { 
+            battleId: parseInt(battleId), 
+            characterId: character.id 
+          });
         } else {
           // Start a new PvE battle with default monsters
           await dispatch(startPvEBattle({ 
@@ -70,22 +102,19 @@ const BattlePage: React.FC = () => {
     
     // Cleanup on unmount
     return () => {
-      socket.off('battle:update');
-      socket.off('battle:end');
+      cleanupSocketEvents();
       
       if (currentBattle) {
-        socket.emit('battle:leave', { 
+        socketService.emit('battle:leave', { 
           battleId: currentBattle.id, 
           characterId: character.id 
         });
       }
-      
-      socket.disconnect();
     };
-  }, [character, battleId, dispatch, navigate, currentBattle]);
+  }, [character, battleId, dispatch, navigate, currentBattle, setupSocketEvents]);
   
   // Handle player actions
-  const handleAction = (participantId: number, action: BattleAction) => {
+  const handleAction = useCallback((participantId: number, action: BattleAction) => {
     if (!currentBattle) return;
     
     dispatch(performAction({
@@ -93,7 +122,14 @@ const BattlePage: React.FC = () => {
       participantId,
       action
     }));
-  };
+    
+    // Also emit the action via socket for real-time updates
+    socketService.emit('battle:action', {
+      battleId: currentBattle.id,
+      participantId,
+      action
+    });
+  }, [currentBattle, dispatch]);
   
   // Redirect to home after battle ends
   useEffect(() => {
@@ -173,7 +209,7 @@ const BattlePage: React.FC = () => {
               </div>
             </div>
             
-            {battleResult.rewards.items.length > 0 && (
+            {battleResult.rewards.items && battleResult.rewards.items.length > 0 && (
               <div className="mt-4">
                 <p className="text-text-secondary mb-2">Items:</p>
                 <ul className="space-y-1">
@@ -204,12 +240,11 @@ const BattlePage: React.FC = () => {
   return (
     <div className="p-4">
       <BattleScene
-        socket={socket}
+        socket={socketService.getSocket()}
         handleAction={handleAction}
       />
     </div>
   );
 };
 
-// Add the default export that was missing
 export default BattlePage;

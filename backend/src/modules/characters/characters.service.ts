@@ -1,10 +1,10 @@
+// src/modules/characters/characters.service.ts
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Character, Faction, CharacterClass } from '../../models/character.entity';
 import { CreateCharacterDto } from './dto/create-character.dto';
 import { UpdateCharacterDto } from './dto/update-character.dto';
-import { User } from '../../models/user.entity';
 
 @Injectable()
 export class CharactersService {
@@ -13,12 +13,13 @@ export class CharactersService {
     private charactersRepository: Repository<Character>,
   ) {}
 
-  async create(user: User, createCharacterDto: CreateCharacterDto): Promise<Character> {
+  async create(userId: number, createCharacterDto: CreateCharacterDto): Promise<Character> {
+    // Создаем объект персонажа с явным указанием userId
     const character = this.charactersRepository.create({
       ...createCharacterDto,
-      user, // Передаем объект user вместо userId
-      faction: createCharacterDto.faction as Faction, // Явное приведение к Faction
-      class: createCharacterDto.class as CharacterClass, // Явное приведение к CharacterClass
+      userId: userId, // Явно устанавливаем userId вместо передачи объекта user
+      faction: createCharacterDto.faction as Faction,
+      class: createCharacterDto.class as CharacterClass,
       level: 1,
       experience: 0,
       health: 100,

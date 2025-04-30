@@ -32,12 +32,14 @@ let ChatGateway = ChatGateway_1 = class ChatGateway {
         this.configService = configService;
     }
     afterInit(server) {
-        this.logger.log('Инициализация WebSocket сервера');
+        this.logger.log('WebSocket server initialized');
     }
     async handleConnection(client) {
         try {
-            const token = client.handshake.auth.token || client.handshake.headers.authorization?.split(' ')[1];
+            const token = client.handshake.auth.token ||
+                client.handshake.headers.authorization?.split(' ')[1];
             if (!token) {
+                this.logger.error('No token provided, disconnecting client');
                 client.disconnect();
                 return;
             }
@@ -47,42 +49,75 @@ let ChatGateway = ChatGateway_1 = class ChatGateway {
             client.data.userId = payload.sub;
             client.data.username = payload.username;
             client.join(`user_${payload.sub}`);
-            this.logger.log(`Клиент подключен: ${client.id}, пользователь: ${payload.username}`);
+            this.logger.log(`Client connected: ${client.id}, user: ${payload.username}`);
+            client.emit('connection_established', {
+                status: 'success',
+                message: 'Successfully connected to chat server',
+            });
         }
         catch (error) {
-            this.logger.error(`Ошибка аутентификации: ${error.message}`);
+            this.logger.error(`Authentication error: ${error.message}`);
+            client.emit('auth_error', { message: 'Authentication failed' });
             client.disconnect();
         }
     }
     handleDisconnect(client) {
-        this.logger.log(`Клиент отключен: ${client.id}`);
+        this.logger.log(`Client disconnected: ${client.id}`);
+        if (client.data && client.data.currentRooms) {
+            for (const room of client.data.currentRooms) {
+                this.server.to(room).emit('roomMessage', {
+                    room,
+                    user: 'system',
+                    text: `${client.data.username || 'A user'} has disconnected`,
+                    timestamp: new Date(),
+                });
+            }
+        }
     }
     handleJoinRoom(client, room) {
+        if (!client.data || !client.data.userId) {
+            return { status: 'error', message: 'Authentication required' };
+        }
         client.join(room);
-        this.logger.log(`Пользователь ${client.data.username} присоединился к комнате ${room}`);
+        if (!client.data.currentRooms) {
+            client.data.currentRooms = [];
+        }
+        if (!client.data.currentRooms.includes(room)) {
+            client.data.currentRooms.push(room);
+        }
+        this.logger.log(`User ${client.data.username} joined room ${room}`);
         this.server.to(room).emit('roomMessage', {
             room,
             user: 'system',
-            text: `${client.data.username} присоединился к комнате`,
+            text: `${client.data.username} joined the room`,
             timestamp: new Date(),
         });
-        return { status: 'ok', message: `Присоединен к комнате ${room}` };
+        return { status: 'ok', message: `Joined room ${room}` };
     }
     handleLeaveRoom(client, room) {
+        if (!client.data || !client.data.userId) {
+            return { status: 'error', message: 'Authentication required' };
+        }
         client.leave(room);
-        this.logger.log(`Пользователь ${client.data.username} покинул комнату ${room}`);
+        if (client.data.currentRooms) {
+            client.data.currentRooms = client.data.currentRooms.filter(r => r !== room);
+        }
+        this.logger.log(`User ${client.data.username} left room ${room}`);
         this.server.to(room).emit('roomMessage', {
             room,
             user: 'system',
-            text: `${client.data.username} покинул комнату`,
+            text: `${client.data.username} left the room`,
             timestamp: new Date(),
         });
-        return { status: 'ok', message: `Вы покинули комнату ${room}` };
+        return { status: 'ok', message: `Left room ${room}` };
     }
     async handleRoomMessage(client, data) {
+        if (!client.data || !client.data.userId) {
+            return { status: 'error', message: 'Authentication required' };
+        }
         const { room, text } = data;
         if (!client.rooms.has(room)) {
-            return { status: 'error', message: 'Вы не находитесь в этой комнате' };
+            return { status: 'error', message: 'You are not in this room' };
         }
         const message = {
             room,
@@ -96,6 +131,9 @@ let ChatGateway = ChatGateway_1 = class ChatGateway {
         return { status: 'ok' };
     }
     async handlePrivateMessage(client, data) {
+        if (!client.data || !client.data.userId) {
+            return { status: 'error', message: 'Authentication required' };
+        }
         const { to, text } = data;
         const message = {
             from: client.data.userId,
@@ -110,6 +148,41 @@ let ChatGateway = ChatGateway_1 = class ChatGateway {
             client.emit('privateMessage', message);
         }
         return { status: 'ok' };
+    }
+    handleBattleJoin(client, data) {
+        if (!client.data || !client.data.userId) {
+            return { status: 'error', message: 'Authentication required' };
+        }
+        const { battleId, characterId } = data;
+        const battleRoom = `battle_${battleId}`;
+        client.join(battleRoom);
+        client.data.currentBattle = battleId;
+        client.data.currentCharacter = characterId;
+        this.logger.log(`User ${client.data.username} joined battle ${battleId}`);
+        this.server.to(battleRoom).emit('battle:playerJoined', {
+            battleId,
+            userId: client.data.userId,
+            username: client.data.username,
+            characterId,
+        });
+        return { status: 'ok', message: `Joined battle ${battleId}` };
+    }
+    handleBattleLeave(client, data) {
+        if (!client.data || !client.data.userId) {
+            return { status: 'error', message: 'Authentication required' };
+        }
+        const { battleId } = data;
+        const battleRoom = `battle_${battleId}`;
+        client.leave(battleRoom);
+        client.data.currentBattle = null;
+        client.data.currentCharacter = null;
+        this.logger.log(`User ${client.data.username} left battle ${battleId}`);
+        this.server.to(battleRoom).emit('battle:playerLeft', {
+            battleId,
+            userId: client.data.userId,
+            username: client.data.username,
+        });
+        return { status: 'ok', message: `Left battle ${battleId}` };
     }
 };
 exports.ChatGateway = ChatGateway;
@@ -149,11 +222,29 @@ __decorate([
     __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
     __metadata("design:returntype", Promise)
 ], ChatGateway.prototype, "handlePrivateMessage", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('battle:join'),
+    __param(0, (0, websockets_1.ConnectedSocket)()),
+    __param(1, (0, websockets_1.MessageBody)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
+    __metadata("design:returntype", void 0)
+], ChatGateway.prototype, "handleBattleJoin", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('battle:leave'),
+    __param(0, (0, websockets_1.ConnectedSocket)()),
+    __param(1, (0, websockets_1.MessageBody)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
+    __metadata("design:returntype", void 0)
+], ChatGateway.prototype, "handleBattleLeave", null);
 exports.ChatGateway = ChatGateway = ChatGateway_1 = __decorate([
     (0, websockets_1.WebSocketGateway)({
         cors: {
             origin: '*',
+            credentials: true,
         },
+        namespace: '/',
     }),
     __metadata("design:paramtypes", [chat_service_1.ChatService,
         jwt_1.JwtService,
